@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Shopper · Live Catalog</title>
+  
+  <!-- 🔥 Firebase Compat Version (Works on GitHub Pages) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+    body { background: #f8f6f2; padding: 1rem; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+    .catalog-wrapper { max-width: 1400px; width: 100%; }
+
+    .live-badge { display: inline-block; background: #e74c3c; color: white; padding: 0.2rem 0.8rem; border-radius: 40px; font-size: 0.7rem; font-weight: 600; animation: pulse 1.5s infinite; margin-left: 0.5rem; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    .shop-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #ffffffcc; backdrop-filter: blur(4px); padding: 0.75rem 1.5rem; border-radius: 60px; margin-bottom: 2rem; border: 1px solid #eae6dd; }
+    .shop-header h1 { font-size: 1.6rem; font-weight: 600; background: linear-gradient(145deg, #2b2b3a, #4a3f5e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; }
+    .shop-header h1 i { -webkit-text-fill-color: #b38b6d; margin-right: 8px; }
+    .shopper-badge { background: #2b2b3a; color: #f0ebe1; padding: 0.4rem 1.2rem; border-radius: 40px; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .admin-toggle { background: #2b2b3a; color: #f0ebe1; border: none; padding: 0.4rem 1.2rem; border-radius: 40px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; display: flex; align-items: center; gap: 6px; margin-left: 0.5rem; }
+    .admin-toggle:hover { background: #4a3f5e; }
+    .admin-toggle.is-admin { background: #2d6a4f; }
+
+    .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .login-overlay.visible { display: flex; }
+    .login-box { background: white; padding: 2.5rem; border-radius: 30px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .login-box h2 { margin-bottom: 1.5rem; text-align: center; }
+    .login-box input { width: 100%; padding: 0.8rem 1.2rem; border-radius: 40px; border: 1px solid #d6cdc0; margin-bottom: 1rem; font-size: 1rem; }
+    .login-box button { width: 100%; padding: 0.8rem; border-radius: 40px; border: none; background: #2b2b3a; color: white; font-size: 1rem; font-weight: 500; cursor: pointer; }
+    .login-box button:hover { background: #4a3f5e; }
+    .login-box .hint { text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #999; }
+
+    .admin-panel { background: #f0ebe2; border-radius: 30px; padding: 1.5rem; margin-bottom: 2rem; border: 2px dashed #b7ab9b; display: none; }
+    .admin-panel.visible { display: block; }
+    .add-item-form { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+    .add-item-form input, .add-item-form select { padding: 0.6rem 1.2rem; border-radius: 40px; border: 1px solid #d6cdc0; background: white; font-size: 0.9rem; flex: 1 1 150px; }
+    .add-item-form button { background: #2b2b3a; color: white; border: none; padding: 0.6rem 2rem; border-radius: 40px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+    .add-item-form button:hover { background: #4a3f5e; }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.8rem 1rem; justify-content: space-between; align-items: center; background: white; padding: 0.8rem 1.5rem; border-radius: 60px; margin-bottom: 2.5rem; border: 1px solid #eae6dd; }
+    .search-box { display: flex; align-items: center; background: #f2efe9; border-radius: 40px; padding: 0.2rem 0.2rem 0.2rem 1.2rem; flex: 1 1 220px; }
+    .search-box input { border: none; background: transparent; padding: 0.6rem 0.8rem; font-size: 0.95rem; width: 100%; outline: none; }
+    .filter-group { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .filter-btn { background: #f2efe9; border: none; padding: 0.45rem 1.1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+    .filter-btn.active { background: #2b2b3a; color: #f0ebe1; }
+    .filter-btn:hover { background: #e3ded5; }
+
+    .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.8rem; }
+    .product-card { background: white; border-radius: 28px; padding: 1.2rem 1rem 1.5rem; border: 1px solid #ece8e0; display: flex; flex-direction: column; height: 100%; position: relative; transition: all 0.2s ease; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 18px 30px rgba(0,0,0,0.04); border-color: #d6cdc0; }
+    .product-card .delete-btn { position: absolute; top: 10px; right: 10px; background: #ff6b6b; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: none; font-size: 0.8rem; transition: 0.2s; }
+    .product-card .delete-btn:hover { background: #c0392b; }
+    .product-card .delete-btn.visible { display: block; }
+    .card-img { background: #f2eee7; border-radius: 24px; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 3.4rem; color: #5b4f3f; margin-bottom: 1rem; }
+    .product-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.2rem; }
+    .category-tag { font-size: 0.7rem; text-transform: uppercase; color: #8a7e6d; background: #f0ebe2; padding: 0.2rem 0.8rem; border-radius: 30px; display: inline-block; margin: 0.3rem 0 0.6rem; align-self: flex-start; }
+    .price { font-weight: 600; font-size: 1.3rem; color: #2b2b3a; margin: 0.4rem 0 0.5rem; }
+    .card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 0.8rem; border-top: 1px solid #f0ece4; }
+    .btn-order { background: #2b2b3a; border: none; color: white; padding: 0.4rem 1.4rem; border-radius: 40px; font-weight: 500; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.15s; }
+    .btn-order:hover { background: #4a3f5e; }
+
+    .toast-message { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #1e1e2a; color: #f0ebe1; padding: 0.7rem 1.8rem; border-radius: 60px; font-size: 0.9rem; box-shadow: 0 12px 30px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.25s ease; pointer-events: none; z-index: 999; }
+    .toast-message.show { opacity: 1; }
+    .no-results { grid-column: 1 / -1; text-align: center; padding: 3rem; color: #999; }
+    .no-results i { font-size: 2.5rem; margin-bottom: 1rem; }
+    .loading { grid-column: 1 / -1; text-align: center; padding: 3rem; color: #999; }
+    .loading i { font-size: 2.5rem; margin-bottom: 1rem; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .shop-header { flex-direction: column; gap: 0.5rem; text-align: center; }
+      .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 1rem; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .filter-group { justify-content: flex-start; }
+    }
+    @media (max-width: 480px) { body { padding: 0.6rem; } .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 0.8rem; } }
+  </style>
+</head>
+<body>
+
+<div class="catalog-wrapper">
+  <header class="shop-header">
+    <h1><i class="fas fa-hand-sparkles"></i> personal shopper <span class="live-badge"><i class="fas fa-circle"></i> LIVE</span></h1>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span class="shopper-badge"><i class="fas fa-user-tie"></i> stylist</span>
+      <button class="admin-toggle" id="adminToggle"><i class="fas fa-user-cog"></i> owner</button>
+    </div>
+  </header>
+
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <h2><i class="fas fa-lock"></i> Owner Login</h2>
+      <input type="password" id="adminPassword" placeholder="Enter owner password" autofocus>
+      <button id="loginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
+      <div class="hint"><i class="fas fa-key"></i> Default password: <strong>shopper123</strong></div>
+    </div>
+  </div>
+
+  <div class="admin-panel" id="adminPanel">
+    <h3 style="margin-bottom: 0.8rem;"><i class="fas fa-plus-circle"></i> Add New Item</h3>
+    <form class="add-item-form" id="addItemForm">
+      <input type="text" id="itemName" placeholder="Item name" required>
+      <select id="itemCategory">
+        <option value="clothing">Clothing</option>
+        <option value="accessory">Accessory</option>
+        <option value="footwear">Footwear</option>
+      </select>
+      <input type="number" id="itemPrice" placeholder="Price $" required min="1">
+      <button type="submit"><i class="fas fa-plus"></i> Add Item</button>
+    </form>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Search items..."></div>
+    <div class="filter-group">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="clothing">Clothing</button>
+      <button class="filter-btn" data-filter="accessory">Accessory</button>
+      <button class="filter-btn" data-filter="footwear">Footwear</button>
+    </div>
+  </div>
+
+  <div id="catalogGrid" class="catalog-grid">
+    <div class="loading"><i class="fas fa-spinner"></i><p>Loading catalog...</p></div>
+  </div>
+</div>
+
+<div id="toast" class="toast-message"><span id="toastText"></span></div>
+
+<script>
+  // ============================================================
+  // 🔥 YOUR FIREBASE CONFIG (Pasted from your code)
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyC56s2XW0555KV50DUDC09Y2PLSamymhY4",
+    authDomain: "personal-shopper-catalog.firebaseapp.com",
+    databaseURL: "https://personal-shopper-catalog-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "personal-shopper-catalog",
+    storageBucket: "personal-shopper-catalog.firebasestorage.app",
+    messagingSenderId: "667091500667",
+    appId: "1:667091500667:web:97831dc42ea6108726ecde",
+    measurementId: "G-VMZ5395NHM"
+  };
+
+  // Initialize Firebase (compat version - no imports needed!)
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // ============================================================
+  // 🔐 OWNER PASSWORD
+  // ============================================================
+  const OWNER_PASSWORD = 'shopper123';
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  let products = [];
+  let currentFilter = 'all';
+  let searchTerm = '';
+  let isAdmin = false;
+  let isFirstLoad = true;
+
+  // ============================================================
+  // DOM REFS
+  // ============================================================
+  const grid = document.getElementById('catalogGrid');
+  const searchInput = document.getElementById('searchInput');
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const toast = document.getElementById('toast');
+  const toastText = document.getElementById('toastText');
+  const adminToggle = document.getElementById('adminToggle');
+  const adminPanel = document.getElementById('adminPanel');
+  const loginOverlay = document.getElementById('loginOverlay');
+  const loginBtn = document.getElementById('loginBtn');
+  const adminPassword = document.getElementById('adminPassword');
+  const addForm = document.getElementById('addItemForm');
+
+  // ============================================================
+  // TOAST
+  // ============================================================
+  let toastTimer = null;
+
+  function showToast(msg) {
+    toastText.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function renderCatalog() {
+    const filtered = products.filter(p => {
+      if (currentFilter !== 'all' && p.category !== currentFilter) return false;
+      if (searchTerm.trim() !== '') {
+        return p.name.toLowerCase().includes(searchTerm.trim().toLowerCase());
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><p>No items found</p></div>`;
+      return;
+    }
+
+    const bgColors = ['#e8e0d5', '#dcd3c6', '#e5ddd0', '#f0e8dd', '#eae1d4'];
+
+    let html = '';
+    filtered.forEach(p => {
+      const bg = bgColors[p.id % bgColors.length];
+
+      html += `
+        <div class="product-card" data-id="${p.id}">
+          ${isAdmin ? `<button class="delete-btn visible" onclick="deleteProduct(${p.id})"><i class="fas fa-trash"></i></button>` : ''}
+          <div class="card-img" style="background: ${bg};"><i class="fas ${p.icon || 'fa-box'}"></i></div>
+          <h3>${p.name}</h3>
+          <span class="category-tag">${p.category}</span>
+          <div class="price">$${p.price}</div>
+          <div class="card-actions">
+            <button class="btn-order" onclick="orderProduct(${p.id})"><i class="fas fa-shopping-bag"></i> order</button>
+          </div>
+        </div>
+      `;
+    });
+
+    grid.innerHTML = html;
+  }
+
+  // ============================================================
+  // FIREBASE: REAL-TIME LISTENER
+  // ============================================================
+  function listenForChanges() {
+    const productsRef = database.ref('products');
+    
+    productsRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      
+      if (data) {
+        products = Object.keys(data).map(key => ({
+          id: parseInt(key),
+          ...data[key]
+        }));
+        products.sort((a, b) => a.id - b.id);
+      } else {
+        products = [];
+      }
+      
+      if (isFirstLoad) {
+        isFirstLoad = false;
+        showToast('📡 Connected to live catalog!');
+      }
+      
+      renderCatalog();
+    });
+  }
+
+  // ============================================================
+  // FIREBASE: ADD PRODUCT
+  // ============================================================
+  async function addProductToFirebase(name, category, price) {
+    try {
+      const snapshot = await database.ref('products').once('value');
+      const data = snapshot.val();
+      let maxId = 0;
+      
+      if (data) {
+        const ids = Object.keys(data).map(Number);
+        maxId = Math.max(...ids);
+      }
+      
+      const newId = maxId + 1;
+      
+      const newProduct = {
+        name: name,
+        category: category,
+        price: price,
+        icon: getIconForCategory(category)
+      };
+      
+      await database.ref('products/' + newId).set(newProduct);
+      showToast(`✅ "${name}" added to live catalog!`);
+    } catch (error) {
+      console.error('Error adding product:', error);
+      showToast('⚠️ Failed to add item');
+    }
+  }
+
+  // ============================================================
+  // FIREBASE: DELETE PRODUCT
+  // ============================================================
+  async function deleteProductFromFirebase(id) {
+    try {
+      await database.ref('products/' + id).remove();
+      showToast('🗑️ Item deleted from live catalog');
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      showToast('⚠️ Failed to delete item');
+    }
+  }
+
+  // ============================================================
+  // ACTIONS
+  // ============================================================
+  function orderProduct(id) {
+    const product = products.find(p => p.id === id);
+    if (product) {
+      showToast(`🛍️ Added to bag: ${product.name}`);
+    }
+  }
+
+  function deleteProduct(id) {
+    if (!isAdmin) {
+      showToast('⛔ Only owner can delete items');
+      return;
+    }
+
+    if (!confirm('Delete this item?')) return;
+    deleteProductFromFirebase(id);
+  }
+
+  // ============================================================
+  // ADMIN LOGIN / LOGOUT
+  // ============================================================
+  function login(password) {
+    if (password === OWNER_PASSWORD) {
+      isAdmin = true;
+      loginOverlay.classList.remove('visible');
+      adminPanel.classList.add('visible');
+      adminToggle.classList.add('is-admin');
+      adminToggle.innerHTML = '<i class="fas fa-user-cog"></i> owner ✓';
+      showToast('🔓 Owner access granted');
+      renderCatalog();
+      adminPassword.value = '';
+    } else {
+      showToast('⛔ Incorrect password');
+      adminPassword.value = '';
+      adminPassword.focus();
+    }
+  }
+
+  function logout() {
+    isAdmin = false;
+    adminPanel.classList.remove('visible');
+    adminToggle.classList.remove('is-admin');
+    adminToggle.innerHTML = '<i class="fas fa-user-cog"></i> owner';
+    showToast('🔒 Logged out');
+    renderCatalog();
+  }
+
+  // ============================================================
+  // EVENT LISTENERS
+  // ============================================================
+  adminToggle.addEventListener('click', () => {
+    if (isAdmin) {
+      logout();
+    } else {
+      loginOverlay.classList.add('visible');
+      adminPassword.focus();
+    }
+  });
+
+  loginBtn.addEventListener('click', () => {
+    login(adminPassword.value);
+  });
+
+  adminPassword.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      login(adminPassword.value);
+    }
+  });
+
+  loginOverlay.addEventListener('click', (e) => {
+    if (e.target === loginOverlay) {
+      loginOverlay.classList.remove('visible');
+      adminPassword.value = '';
+    }
+  });
+
+  addForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    if (!isAdmin) {
+      showToast('⛔ Only owner can add items');
+      return;
+    }
+
+    const name = document.getElementById('itemName').value.trim();
+    const category = document.getElementById('itemCategory').value;
+    const price = parseInt(document.getElementById('itemPrice').value);
+
+    if (!name || !price) {
+      showToast('⚠️ Please fill all fields');
+      return;
+    }
+
+    addProductToFirebase(name, category, price);
+    addForm.reset();
+  });
+
+  function getIconForCategory(cat) {
+    const map = {
+      'clothing': 'fa-tshirt',
+      'accessory': 'fa-gem',
+      'footwear': 'fa-shoe-prints'
+    };
+    return map[cat] || 'fa-box';
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentFilter = this.dataset.filter;
+      renderCatalog();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = this.value;
+      renderCatalog();
+    }, 200);
+  });
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  listenForChanges();
+
+  console.log('🔥 Firebase real-time catalog ready!');
+  console.log('🔑 Owner password:', OWNER_PASSWORD);
+  console.log('📡 All changes sync live to all users!');
+</script>
+
+</body>
+</html>
