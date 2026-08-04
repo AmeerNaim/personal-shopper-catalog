@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Shopper · Fast Upload</title>
+    <title>Personal Shopper</title>
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -14,23 +14,21 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         body { background: #f5f3f0; padding: 20px; max-width: 1400px; margin: 0 auto; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 50px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 50px; margin-bottom: 20px; }
         .header h1 { color: #2b2b3a; font-size: 24px; }
         .badge { background: #e74c3c; color: white; padding: 2px 12px; border-radius: 20px; font-size: 12px; margin-left: 10px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
-        .btn-owner { background: #2b2b3a; color: white; border: none; padding: 8px 20px; border-radius: 50px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-owner { background: #2b2b3a; color: white; border: none; padding: 8px 20px; border-radius: 50px; cursor: pointer; font-size: 14px; }
         .btn-owner:hover { background: #4a3f5e; }
         .btn-owner.active { background: #2d6a4f; }
         
         .admin-panel { background: #f0ece5; padding: 20px; border-radius: 20px; margin-bottom: 20px; display: none; border: 2px dashed #b7ab9b; }
         .admin-panel.show { display: block; }
-        .admin-panel h3 { margin-bottom: 15px; }
         .admin-panel form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .admin-panel input, .admin-panel select { padding: 10px 15px; border-radius: 50px; border: 1px solid #ddd; flex: 1; min-width: 120px; font-size: 14px; }
+        .admin-panel input, .admin-panel select { padding: 10px 15px; border-radius: 50px; border: 1px solid #ddd; flex: 1; min-width: 120px; }
         .admin-panel input[type="file"] { padding: 8px; flex: 1 1 200px; }
-        .admin-panel button { background: #2b2b3a; color: white; border: none; padding: 10px 25px; border-radius: 50px; cursor: pointer; font-weight: 500; transition: 0.2s; font-size: 14px; }
-        .admin-panel button:hover { background: #4a3f5e; }
+        .admin-panel button { background: #2b2b3a; color: white; border: none; padding: 10px 25px; border-radius: 50px; cursor: pointer; font-weight: 500; }
         .admin-panel button:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .preview-container { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; width: 100%; }
@@ -42,39 +40,35 @@
         .upload-progress-bar { height: 100%; background: #2d6a4f; width: 0%; transition: width 0.3s; border-radius: 3px; }
         .upload-status { font-size: 13px; color: #666; margin: 5px 0; display: none; }
         .upload-status.show { display: block; }
+        .debug-box { background: #1a1a2e; color: #0f0; padding: 10px; border-radius: 10px; margin: 10px 0; font-size: 12px; max-height: 200px; overflow-y: auto; display: none; }
+        .debug-box.show { display: block; }
         
-        .toolbar { display: flex; flex-wrap: wrap; gap: 10px; background: white; padding: 10px 20px; border-radius: 50px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 10px; background: white; padding: 10px 20px; border-radius: 50px; margin-bottom: 20px; }
         .toolbar input { flex: 1; padding: 8px 15px; border: none; background: #f5f3f0; border-radius: 50px; min-width: 150px; outline: none; }
         .filters { display: flex; gap: 5px; flex-wrap: wrap; }
-        .filters button { padding: 6px 15px; border: none; background: #f0ece5; border-radius: 50px; cursor: pointer; transition: 0.2s; }
-        .filters button:hover { background: #e0dcd5; }
+        .filters button { padding: 6px 15px; border: none; background: #f0ece5; border-radius: 50px; cursor: pointer; }
         .filters button.active { background: #2b2b3a; color: white; }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .card { background: white; padding: 15px; border-radius: 20px; border: 1px solid #e0ddd8; position: relative; transition: 0.2s; }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: #ccc; }
-        
-        .carousel { position: relative; width: 100%; height: 200px; border-radius: 15px; overflow: hidden; background: #f0ece5; margin-bottom: 10px; }
-        .carousel img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        .carousel img.active { display: block; }
-        .carousel .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 50px; color: #ccc; }
-        .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 50%; font-size: 14px; z-index: 5; transition: 0.2s; }
-        .carousel-btn:hover { background: rgba(0,0,0,0.8); }
-        .carousel-btn.prev { left: 5px; }
-        .carousel-btn.next { right: 5px; }
-        .carousel-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 5; }
-        .carousel-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: 0.2s; }
-        .carousel-dots .dot.active { background: white; }
-        .image-count { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; font-size: 11px; padding: 2px 10px; border-radius: 12px; z-index: 5; }
-        
+        .card { background: white; padding: 15px; border-radius: 20px; border: 1px solid #e0ddd8; position: relative; }
+        .card .carousel { position: relative; width: 100%; height: 200px; border-radius: 15px; overflow: hidden; background: #f0ece5; margin-bottom: 10px; }
+        .card .carousel img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .card .carousel img.active { display: block; }
+        .card .carousel .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 50px; color: #ccc; }
+        .card .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 50%; font-size: 14px; z-index: 5; }
+        .card .carousel-btn:hover { background: rgba(0,0,0,0.8); }
+        .card .carousel-btn.prev { left: 5px; }
+        .card .carousel-btn.next { right: 5px; }
+        .card .carousel-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 5; }
+        .card .carousel-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; }
+        .card .carousel-dots .dot.active { background: white; }
+        .card .image-count { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; font-size: 11px; padding: 2px 10px; border-radius: 12px; z-index: 5; }
         .card h3 { font-size: 16px; margin-bottom: 5px; }
         .card .tag { font-size: 11px; background: #f0ece5; padding: 2px 10px; border-radius: 20px; display: inline-block; }
         .card .price { font-size: 20px; font-weight: bold; margin: 8px 0; }
         .card .actions { display: flex; justify-content: space-between; border-top: 1px solid #f0ece5; padding-top: 10px; margin-top: 10px; }
-        .card .actions button { background: #2b2b3a; color: white; border: none; padding: 5px 15px; border-radius: 50px; cursor: pointer; transition: 0.2s; }
-        .card .actions button:hover { background: #4a3f5e; }
-        .card .delete-btn { position: absolute; top: 10px; right: 10px; background: #ff6b6b; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: none; font-size: 12px; z-index: 10; transition: 0.2s; }
-        .card .delete-btn:hover { background: #c0392b; }
+        .card .actions button { background: #2b2b3a; color: white; border: none; padding: 5px 15px; border-radius: 50px; cursor: pointer; }
+        .card .delete-btn { position: absolute; top: 10px; right: 10px; background: #ff6b6b; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: none; font-size: 12px; z-index: 10; }
         .card .delete-btn.show { display: block; }
         
         .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
@@ -83,29 +77,21 @@
         .login-box h2 { text-align: center; margin-bottom: 20px; }
         .login-box input { width: 100%; padding: 10px 15px; border-radius: 50px; border: 1px solid #ddd; margin-bottom: 10px; }
         .login-box button { width: 100%; padding: 10px; border-radius: 50px; border: none; background: #2b2b3a; color: white; cursor: pointer; }
-        .login-box button:hover { background: #4a3f5e; }
         .login-box .hint { text-align: center; margin-top: 10px; font-size: 12px; color: #999; }
         
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: white; padding: 10px 25px; border-radius: 50px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; font-size: 14px; }
         .toast.show { opacity: 1; }
-        
         .loading { text-align: center; padding: 50px; color: #999; grid-column: 1 / -1; }
         .loading i { font-size: 30px; display: block; margin-bottom: 10px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .error { text-align: center; padding: 50px; color: #e74c3c; grid-column: 1 / -1; }
         .no-results { text-align: center; padding: 50px; color: #999; grid-column: 1 / -1; }
         
-        @media (max-width: 600px) { 
-            .header { flex-direction: column; gap: 10px; text-align: center; } 
-            .toolbar { flex-direction: column; } 
-            .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-            .carousel { height: 150px; }
-        }
+        @media (max-width: 600px) { .header { flex-direction: column; gap: 10px; text-align: center; } .toolbar { flex-direction: column; } .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
     </style>
 </head>
 <body>
 
-    <!-- HEADER -->
     <div class="header">
         <h1>🛍️ personal shopper <span class="badge">LIVE</span></h1>
         <div>
@@ -114,7 +100,6 @@
         </div>
     </div>
 
-    <!-- ADMIN PANEL -->
     <div class="admin-panel" id="adminPanel">
         <h3>📸 Add New Item</h3>
         <form id="addForm">
@@ -129,14 +114,14 @@
                 <label style="font-weight:500;font-size:14px;display:block;margin-bottom:5px;">📷 Upload Image:</label>
                 <input type="file" id="imageInput" accept="image/*" multiple>
                 <div class="preview-container" id="previewContainer"></div>
-                <div class="upload-status" id="uploadStatus">⏳ Ready to upload</div>
+                <div class="upload-status" id="uploadStatus">⏳ Ready</div>
                 <div class="upload-progress" id="uploadProgress"><div class="upload-progress-bar" id="uploadProgressBar"></div></div>
+                <div class="debug-box" id="debugBox"></div>
             </div>
             <button type="submit" id="addBtn">➕ Add Item</button>
         </form>
     </div>
 
-    <!-- TOOLBAR -->
     <div class="toolbar">
         <input type="text" id="searchBox" placeholder="Search items...">
         <div class="filters">
@@ -147,12 +132,10 @@
         </div>
     </div>
 
-    <!-- GRID -->
     <div class="grid" id="grid">
         <div class="loading"><i>⏳</i><p>Loading catalog...</p></div>
     </div>
 
-    <!-- LOGIN MODAL -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
             <h2>🔐 Owner Login</h2>
@@ -162,7 +145,6 @@
         </div>
     </div>
 
-    <!-- TOAST -->
     <div class="toast" id="toast"><span id="toastText"></span></div>
 
     <script>
@@ -186,8 +168,6 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const storage = firebase.storage();
-
-        console.log('✅ Firebase initialized!');
 
         // ============================================================
         // DEFAULT PRODUCTS
@@ -236,7 +216,23 @@
         const uploadProgress = document.getElementById('uploadProgress');
         const uploadProgressBar = document.getElementById('uploadProgressBar');
         const uploadStatus = document.getElementById('uploadStatus');
+        const debugBox = document.getElementById('debugBox');
         const addBtn = document.getElementById('addBtn');
+
+        // ============================================================
+        // DEBUG
+        // ============================================================
+        function debug(msg) {
+            debugBox.classList.add('show');
+            debugBox.innerHTML += `\n${new Date().toLocaleTimeString()}: ${msg}`;
+            debugBox.scrollTop = debugBox.scrollHeight;
+            console.log(msg);
+        }
+
+        function clearDebug() {
+            debugBox.innerHTML = '';
+            debugBox.classList.remove('show');
+        }
 
         // ============================================================
         // TOAST
@@ -250,14 +246,14 @@
         }
 
         // ============================================================
-        // IMAGE PREVIEW (FAST - No Compression)
+        // IMAGE PREVIEW
         // ============================================================
         imageInput.addEventListener('change', function(e) {
             selectedFiles = Array.from(e.target.files);
             previewContainer.innerHTML = '';
             
             if (selectedFiles.length === 0) {
-                uploadStatus.textContent = '⏳ Ready to upload';
+                uploadStatus.textContent = '⏳ Ready';
                 return;
             }
             
@@ -287,10 +283,13 @@
         });
 
         // ============================================================
-        // 🚀 FAST UPLOAD - PARALLEL (No Compression)
+        // 🚀 UPLOAD WITH DEBUG
         // ============================================================
-        async function uploadImagesFast(productId) {
+        async function uploadImagesWithDebug(productId) {
             if (selectedFiles.length === 0) return [];
+            
+            debug('📤 Starting upload...');
+            debug(`📸 ${selectedFiles.length} image(s) to upload`);
             
             uploadProgress.style.display = 'block';
             uploadStatus.textContent = `⏳ Uploading ${selectedFiles.length} image(s)...`;
@@ -300,13 +299,34 @@
             const total = selectedFiles.length;
             let completed = 0;
             
-            // Create upload promises for ALL images at once (parallel)
+            // Create upload promises for ALL images at once
             const uploadPromises = selectedFiles.map((file, index) => {
                 return new Promise(async (resolve, reject) => {
                     try {
+                        debug(`📤 Uploading image ${index + 1}/${total}: ${file.name} (${Math.round(file.size/1024)}KB)`);
+                        
                         const storageRef = storage.ref(`products/${productId}/img_${Date.now()}_${index}`);
-                        const snapshot = await storageRef.put(file);
+                        
+                        // Add timeout to detect hanging
+                        const uploadTask = storageRef.put(file);
+                        
+                        // Track progress
+                        uploadTask.on('state_changed', 
+                            (snapshot) => {
+                                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                debug(`📊 Image ${index + 1} progress: ${Math.round(progress)}%`);
+                            },
+                            (error) => {
+                                debug(`❌ Image ${index + 1} error: ${error.message}`);
+                                reject(error);
+                            }
+                        );
+                        
+                        const snapshot = await uploadTask;
+                        debug(`✅ Image ${index + 1} uploaded successfully!`);
+                        
                         const url = await snapshot.ref.getDownloadURL();
+                        debug(`🔗 Image ${index + 1} URL generated`);
                         
                         completed++;
                         const progress = (completed / total) * 100;
@@ -315,6 +335,7 @@
                         
                         resolve(url);
                     } catch (error) {
+                        debug(`❌ Image ${index + 1} failed: ${error.message}`);
                         reject(error);
                     }
                 });
@@ -322,13 +343,15 @@
             
             // Wait for ALL uploads to finish
             try {
+                debug('⏳ Waiting for all uploads to complete...');
                 const results = await Promise.all(uploadPromises);
                 imageUrls.push(...results);
+                debug(`✅ All ${imageUrls.length} image(s) uploaded successfully!`);
                 uploadStatus.textContent = `✅ ${imageUrls.length} image(s) uploaded!`;
                 uploadProgress.style.display = 'none';
                 return imageUrls;
             } catch (error) {
-                console.error('Upload error:', error);
+                debug(`❌ Upload failed: ${error.message}`);
                 uploadStatus.textContent = `❌ Upload failed: ${error.message}`;
                 throw error;
             }
@@ -338,13 +361,11 @@
         // SEED DATABASE
         // ============================================================
         async function seedDatabase() {
-            console.log('🌱 Seeding...');
             try {
                 for (const p of DEFAULT_PRODUCTS) {
                     const { id, ...data } = p;
                     await database.ref('products/' + id).set(data);
                 }
-                console.log('✅ Seeded ' + DEFAULT_PRODUCTS.length + ' products');
                 showToast('📦 Added ' + DEFAULT_PRODUCTS.length + ' products!');
             } catch (e) {
                 console.error('❌ Seed error:', e);
@@ -382,7 +403,7 @@
         }
 
         // ============================================================
-        // RENDER WITH IMAGE CAROUSEL
+        // RENDER
         // ============================================================
         function render() {
             if (!isReady) return;
@@ -405,7 +426,6 @@
                 html += `
                     <div class="card" data-id="${p.id}">
                         <button class="delete-btn ${isAdmin ? 'show' : ''}" onclick="deleteProduct(${p.id})">✕</button>
-                        
                         <div class="carousel" id="carousel-${p.id}">
                             ${hasImages ? `
                                 ${p.images.map((img, idx) => `
@@ -425,7 +445,6 @@
                                 <div class="no-img">📦</div>
                             `}
                         </div>
-                        
                         <h3>${p.name}</h3>
                         <span class="tag">${p.category}</span>
                         <div class="price">$${p.price}</div>
@@ -440,24 +459,19 @@
         }
 
         // ============================================================
-        // CAROUSEL CONTROLS
+        // CAROUSEL
         // ============================================================
         function changeSlide(productId, direction) {
             const carousel = document.getElementById(`carousel-${productId}`);
             if (!carousel) return;
-            
             const slides = carousel.querySelectorAll('img');
             const dots = carousel.querySelectorAll('.dot');
             if (slides.length === 0) return;
-            
             let current = Array.from(slides).findIndex(s => s.classList.contains('active'));
             if (current === -1) current = 0;
-            
             slides[current].classList.remove('active');
             if (dots.length) dots[current].classList.remove('active');
-            
             current = (current + direction + slides.length) % slides.length;
-            
             slides[current].classList.add('active');
             if (dots.length) dots[current].classList.add('active');
         }
@@ -465,13 +479,10 @@
         function goToSlide(productId, index) {
             const carousel = document.getElementById(`carousel-${productId}`);
             if (!carousel) return;
-            
             const slides = carousel.querySelectorAll('img');
             const dots = carousel.querySelectorAll('.dot');
-            
             slides.forEach(s => s.classList.remove('active'));
             dots.forEach(d => d.classList.remove('active'));
-            
             slides[index].classList.add('active');
             dots[index].classList.add('active');
         }
@@ -493,7 +504,7 @@
         }
 
         // ============================================================
-        // ADMIN LOGIN
+        // ADMIN
         // ============================================================
         const PASSWORD = 'shopper123';
 
@@ -552,6 +563,9 @@
 
             if (!name || !price) { showToast('⚠️ Fill all fields'); return; }
 
+            clearDebug();
+            debug(`🚀 Starting to add "${name}"...`);
+            
             addBtn.disabled = true;
             addBtn.textContent = '⏳ Adding...';
 
@@ -559,6 +573,7 @@
 
             try {
                 // Get next ID
+                debug('📋 Getting next product ID...');
                 const snapshot = await database.ref('products').once('value');
                 const data = snapshot.val();
                 let maxId = 0;
@@ -567,22 +582,28 @@
                     maxId = Math.max(...ids);
                 }
                 const newId = maxId + 1;
+                debug(`📋 New product ID: ${newId}`);
 
-                // Upload images in PARALLEL (fast!)
+                // Upload images
                 let imageUrls = [];
                 if (selectedFiles.length > 0) {
-                    imageUrls = await uploadImagesFast(newId);
+                    imageUrls = await uploadImagesWithDebug(newId);
+                } else {
+                    debug('📸 No images to upload');
                 }
 
                 // Save product
+                debug('💾 Saving product to database...');
                 await database.ref('products/' + newId).set({
                     name, category, price,
                     images: imageUrls,
                     icon: getIcon(category)
                 });
+                debug('✅ Product saved to database!');
 
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
                 showToast(`✅ "${name}" added in ${elapsed}s with ${imageUrls.length} image(s)!`);
+                debug(`✅ Complete! Total time: ${elapsed}s`);
                 
                 addForm.reset();
                 previewContainer.innerHTML = '';
@@ -590,11 +611,12 @@
                 imageInput.value = '';
                 uploadProgress.style.display = 'none';
                 uploadProgressBar.style.width = '0%';
-                uploadStatus.textContent = '⏳ Ready to upload';
+                uploadStatus.textContent = '⏳ Ready';
                 
             } catch (e) {
                 console.error('Add error:', e);
-                showToast('⚠️ Error adding item: ' + e.message);
+                debug(`❌ ERROR: ${e.message}`);
+                showToast('⚠️ Error: ' + e.message);
             } finally {
                 addBtn.disabled = false;
                 addBtn.textContent = '➕ Add Item';
@@ -628,9 +650,9 @@
         // START
         // ============================================================
         listenToDatabase();
-        console.log('🔥 Personal Shopper with FAST upload started!');
+        console.log('🔥 Personal Shopper with DEBUG started!');
         console.log('🔑 Password:', PASSWORD);
-        console.log('📸 Images upload in PARALLEL - much faster!');
+        console.log('📸 Check the debug box for upload progress');
     </script>
 
 </body>
