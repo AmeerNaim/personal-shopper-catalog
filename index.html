@@ -31,7 +31,7 @@
         .admin-panel form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .admin-panel input, .admin-panel select { padding: 10px 15px; border-radius: 50px; border: 1px solid #ddd; flex: 1; min-width: 120px; }
         .admin-panel input[type="file"] { padding: 8px; flex: 1 1 200px; }
-        .admin-panel button { background: #2b2b3a; color: white; border: none; padding: 10px 25px; border-radius: 50px; cursor: pointer; font-weight: 500; }
+        .admin-panel button { background: #2b2b3a; color: white; border: none; padding: 10px 25px; border-radius: 50px; cursor: pointer; font-weight: 500; transition: 0.2s; }
         .admin-panel button:hover { background: #4a3f5e; }
         .admin-panel button:disabled { opacity: 0.5; cursor: not-allowed; }
         
@@ -40,8 +40,11 @@
         .preview-item { position: relative; width: 70px; height: 70px; border-radius: 12px; overflow: hidden; border: 2px solid #ddd; }
         .preview-item img { width: 100%; height: 100%; object-fit: cover; }
         .preview-item .remove { position: absolute; top: -6px; right: -6px; background: #ff6b6b; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
-        .upload-progress { width: 100%; height: 4px; background: #ddd; border-radius: 2px; margin: 5px 0; display: none; }
-        .upload-progress-bar { height: 100%; background: #2d6a4f; width: 0%; transition: width 0.3s; border-radius: 2px; }
+        .preview-item .size-badge { position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; font-size: 9px; padding: 1px 6px; border-radius: 10px; }
+        .upload-progress { width: 100%; height: 6px; background: #ddd; border-radius: 3px; margin: 10px 0; display: none; }
+        .upload-progress-bar { height: 100%; background: #2d6a4f; width: 0%; transition: width 0.3s; border-radius: 3px; }
+        .upload-status { font-size: 13px; color: #666; margin: 5px 0; display: none; }
+        .upload-status.show { display: block; }
         
         /* Toolbar */
         .toolbar { display: flex; flex-wrap: wrap; gap: 10px; background: white; padding: 10px 20px; border-radius: 50px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
@@ -68,6 +71,7 @@
         .carousel-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 5; }
         .carousel-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: 0.2s; }
         .carousel-dots .dot.active { background: white; }
+        .image-count { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; font-size: 11px; padding: 2px 10px; border-radius: 12px; z-index: 5; }
         
         .card h3 { font-size: 16px; margin-bottom: 5px; }
         .card .tag { font-size: 11px; background: #f0ece5; padding: 2px 10px; border-radius: 20px; display: inline-block; }
@@ -98,6 +102,9 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .error { text-align: center; padding: 50px; color: #e74c3c; grid-column: 1 / -1; }
         .no-results { text-align: center; padding: 50px; color: #999; grid-column: 1 / -1; }
+        
+        /* File size info */
+        .file-info { font-size: 12px; color: #888; margin-top: 5px; }
         
         @media (max-width: 600px) { 
             .header { flex-direction: column; gap: 10px; text-align: center; } 
@@ -132,7 +139,9 @@
             <div style="width:100%;">
                 <label style="font-weight:500;font-size:14px;display:block;margin-bottom:5px;">📷 Upload Images (multiple):</label>
                 <input type="file" id="imageInput" accept="image/*" multiple>
+                <div class="file-info" id="fileInfo">No images selected</div>
                 <div class="preview-container" id="previewContainer"></div>
+                <div class="upload-status" id="uploadStatus">⏳ Preparing images...</div>
                 <div class="upload-progress" id="uploadProgress"><div class="upload-progress-bar" id="uploadProgressBar"></div></div>
             </div>
             <button type="submit" id="addBtn">➕ Add Item</button>
@@ -238,6 +247,8 @@
         const previewContainer = document.getElementById('previewContainer');
         const uploadProgress = document.getElementById('uploadProgress');
         const uploadProgressBar = document.getElementById('uploadProgressBar');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const fileInfo = document.getElementById('fileInfo');
         const addBtn = document.getElementById('addBtn');
 
         // ============================================================
@@ -252,26 +263,157 @@
         }
 
         // ============================================================
+        // 📸 IMAGE COMPRESSION (OPTION 1)
+        // ============================================================
+        function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+            return new Promise((resolve, reject) => {
+                // If it's already small, don't compress
+                if (file.size < 200 * 1024) { // < 200KB
+                    console.log(`✅ ${file.name}: Already small (${Math.round(file.size/1024)}KB), skipping compression`);
+                    resolve(file);
+                    return;
+                }
+                
+                console.log(`🔄 Compressing ${file.name} (${Math.round(file.size/1024)}KB)...`);
+                
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Resize if too large
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                        if (height > maxHeight) {
+                            width = (width * maxHeight) / height;
+                            height = maxHeight;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Convert to JPEG with quality setting
+                        canvas.toBlob((blob) => {
+                            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + '.jpg', {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            
+                            const originalSize = Math.round(file.size / 1024);
+                            const newSize = Math.round(compressedFile.size / 1024);
+                            const saved = Math.round((1 - compressedFile.size / file.size) * 100);
+                            
+                            console.log(`✅ Compressed: ${originalSize}KB → ${newSize}KB (saved ${saved}%)`);
+                            
+                            resolve(compressedFile);
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
+        // ============================================================
+        // 📸 UPLOAD IMAGES WITH COMPRESSION
+        // ============================================================
+        async function uploadImages(productId) {
+            if (selectedFiles.length === 0) return [];
+            
+            uploadProgress.style.display = 'block';
+            uploadStatus.classList.add('show');
+            uploadStatus.textContent = '⏳ Compressing images...';
+            const imageUrls = [];
+            let totalOriginalSize = 0;
+            let totalCompressedSize = 0;
+            
+            for (let i = 0; i < selectedFiles.length; i++) {
+                try {
+                    const originalSize = Math.round(selectedFiles[i].size / 1024);
+                    totalOriginalSize += originalSize;
+                    
+                    uploadStatus.textContent = `📸 Processing ${i+1}/${selectedFiles.length}...`;
+                    
+                    // Compress image
+                    const compressedFile = await compressImage(selectedFiles[i], 800, 800, 0.7);
+                    totalCompressedSize += Math.round(compressedFile.size / 1024);
+                    
+                    uploadStatus.textContent = `📤 Uploading ${i+1}/${selectedFiles.length}...`;
+                    
+                    const storageRef = storage.ref(`products/${productId}/img_${Date.now()}_${i}`);
+                    const snapshot = await storageRef.put(compressedFile);
+                    const url = await snapshot.ref.getDownloadURL();
+                    imageUrls.push(url);
+                    
+                    // Update progress bar
+                    const progress = ((i + 1) / selectedFiles.length) * 100;
+                    uploadProgressBar.style.width = progress + '%';
+                    
+                    console.log(`✅ Image ${i+1} uploaded`);
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showToast(`⚠️ Failed: ${selectedFiles[i].name}`);
+                    throw error;
+                }
+            }
+            
+            const savedPercent = Math.round((1 - totalCompressedSize / totalOriginalSize) * 100);
+            uploadStatus.textContent = `✅ ${imageUrls.length} images uploaded! (Saved ${savedPercent}% size)`;
+            
+            setTimeout(() => {
+                uploadStatus.classList.remove('show');
+            }, 3000);
+            
+            uploadProgress.style.display = 'none';
+            uploadProgressBar.style.width = '0%';
+            
+            return imageUrls;
+        }
+
+        // ============================================================
         // IMAGE PREVIEW
         // ============================================================
         imageInput.addEventListener('change', function(e) {
             selectedFiles = Array.from(e.target.files);
             previewContainer.innerHTML = '';
             
+            let totalSize = 0;
+            selectedFiles.forEach(f => totalSize += f.size);
+            
+            fileInfo.textContent = `${selectedFiles.length} images selected (${Math.round(totalSize/1024)}KB total)`;
+            
+            if (totalSize > 5 * 1024 * 1024) {
+                fileInfo.textContent += ' ⚠️ Large files - compression will reduce size';
+                fileInfo.style.color = '#e67e22';
+            } else {
+                fileInfo.style.color = '#888';
+            }
+            
             selectedFiles.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const div = document.createElement('div');
                     div.className = 'preview-item';
+                    const size = Math.round(file.size / 1024);
                     div.innerHTML = `
                         <img src="${event.target.result}" alt="preview">
+                        <span class="size-badge">${size}KB</span>
                         <button class="remove" data-index="${index}">✕</button>
                     `;
                     previewContainer.appendChild(div);
                     
                     div.querySelector('.remove').addEventListener('click', function() {
                         selectedFiles.splice(index, 1);
-                        // Rebuild file input
                         const dataTransfer = new DataTransfer();
                         selectedFiles.forEach(f => dataTransfer.items.add(f));
                         imageInput.files = dataTransfer.files;
@@ -281,38 +423,6 @@
                 reader.readAsDataURL(file);
             });
         });
-
-        // ============================================================
-        // UPLOAD IMAGES
-        // ============================================================
-        async function uploadImages(productId) {
-            if (selectedFiles.length === 0) return [];
-            
-            uploadProgress.style.display = 'block';
-            const imageUrls = [];
-            
-            for (let i = 0; i < selectedFiles.length; i++) {
-                const file = selectedFiles[i];
-                const storageRef = storage.ref(`products/${productId}/img_${Date.now()}_${i}`);
-                
-                try {
-                    const snapshot = await storageRef.put(file);
-                    const url = await snapshot.ref.getDownloadURL();
-                    imageUrls.push(url);
-                    
-                    const progress = ((i + 1) / selectedFiles.length) * 100;
-                    uploadProgressBar.style.width = progress + '%';
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    showToast('⚠️ Failed to upload: ' + file.name);
-                    throw error;
-                }
-            }
-            
-            uploadProgress.style.display = 'none';
-            uploadProgressBar.style.width = '0%';
-            return imageUrls;
-        }
 
         // ============================================================
         // SEED DATABASE
@@ -387,20 +497,23 @@
                         <button class="delete-btn ${isAdmin ? 'show' : ''}" onclick="deleteProduct(${p.id})">✕</button>
                         
                         <div class="carousel" id="carousel-${p.id}">
-                            ${hasImages ? p.images.map((img, idx) => `
-                                <img class="${idx === 0 ? 'active' : ''}" src="${img}" alt="${p.name}" loading="lazy">
-                            `).join('') : `
+                            ${hasImages ? `
+                                ${p.images.map((img, idx) => `
+                                    <img class="${idx === 0 ? 'active' : ''}" src="${img}" alt="${p.name}" loading="lazy">
+                                `).join('')}
+                                <span class="image-count">${p.images.length} 📸</span>
+                                ${p.images.length > 1 ? `
+                                    <button class="carousel-btn prev" onclick="changeSlide(${p.id}, -1)">‹</button>
+                                    <button class="carousel-btn next" onclick="changeSlide(${p.id}, 1)">›</button>
+                                    <div class="carousel-dots">
+                                        ${p.images.map((_, idx) => `
+                                            <span class="dot ${idx === 0 ? 'active' : ''}" onclick="goToSlide(${p.id}, ${idx})"></span>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            ` : `
                                 <div class="no-img">📦</div>
                             `}
-                            ${hasImages && p.images.length > 1 ? `
-                                <button class="carousel-btn prev" onclick="changeSlide(${p.id}, -1)">‹</button>
-                                <button class="carousel-btn next" onclick="changeSlide(${p.id}, 1)">›</button>
-                                <div class="carousel-dots">
-                                    ${p.images.map((_, idx) => `
-                                        <span class="dot ${idx === 0 ? 'active' : ''}" onclick="goToSlide(${p.id}, ${idx})"></span>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
                         </div>
                         
                         <h3>${p.name}</h3>
@@ -543,7 +656,7 @@
                 }
                 const newId = maxId + 1;
 
-                // Upload images
+                // Upload images with compression
                 let imageUrls = [];
                 if (selectedFiles.length > 0) {
                     imageUrls = await uploadImages(newId);
@@ -561,8 +674,11 @@
                 previewContainer.innerHTML = '';
                 selectedFiles = [];
                 imageInput.value = '';
+                fileInfo.textContent = 'No images selected';
+                fileInfo.style.color = '#888';
                 uploadProgress.style.display = 'none';
                 uploadProgressBar.style.width = '0%';
+                uploadStatus.classList.remove('show');
             } catch (e) {
                 console.error('Add error:', e);
                 showToast('⚠️ Error adding item');
@@ -599,8 +715,9 @@
         // START
         // ============================================================
         listenToDatabase();
-        console.log('🔥 Personal Shopper with Images started!');
+        console.log('🔥 Personal Shopper with Image Compression started!');
         console.log('🔑 Password:', PASSWORD);
+        console.log('📸 Images will be compressed to ~70% quality, max 800x800px');
     </script>
 
 </body>
