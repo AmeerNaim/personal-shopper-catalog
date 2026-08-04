@@ -3,262 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Personal Shopper · With Images</title>
+  <title>Personal Shopper</title>
   
-  <!-- Firebase SDKs -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-  
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
-    body { background: #f8f6f2; padding: 1rem; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
-    .catalog-wrapper { max-width: 1400px; width: 100%; }
-
-    /* Header */
-    .shop-header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      background: #ffffffcc;
-      backdrop-filter: blur(4px);
-      padding: 0.75rem 1.5rem;
-      border-radius: 60px;
-      margin-bottom: 2rem;
-      border: 1px solid #eae6dd;
-    }
-    .shop-header h1 { font-size: 1.6rem; font-weight: 600; background: linear-gradient(145deg, #2b2b3a, #4a3f5e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; }
-    .shop-header h1 i { -webkit-text-fill-color: #b38b6d; margin-right: 8px; }
-    .live-badge { display: inline-block; background: #e74c3c; color: white; padding: 0.2rem 0.8rem; border-radius: 40px; font-size: 0.7rem; font-weight: 600; animation: pulse 1.5s infinite; margin-left: 0.5rem; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-    .shopper-badge { background: #2b2b3a; color: #f0ebe1; padding: 0.4rem 1.2rem; border-radius: 40px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
-    .admin-toggle { background: #2b2b3a; color: #f0ebe1; border: none; padding: 0.4rem 1.2rem; border-radius: 40px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; display: flex; align-items: center; gap: 6px; margin-left: 0.5rem; }
-    .admin-toggle:hover { background: #4a3f5e; }
-    .admin-toggle.is-admin { background: #2d6a4f; }
-
-    /* Login Modal */
-    .login-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-    .login-overlay.visible { display: flex; }
-    .login-box { background: white; padding: 2.5rem; border-radius: 30px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    .login-box h2 { margin-bottom: 1.5rem; text-align: center; }
-    .login-box input { width: 100%; padding: 0.8rem 1.2rem; border-radius: 40px; border: 1px solid #d6cdc0; margin-bottom: 1rem; font-size: 1rem; }
-    .login-box button { width: 100%; padding: 0.8rem; border-radius: 40px; border: none; background: #2b2b3a; color: white; font-size: 1rem; font-weight: 500; cursor: pointer; }
-    .login-box button:hover { background: #4a3f5e; }
-    .login-box .hint { text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #999; }
-
-    /* Admin Panel */
-    .admin-panel { background: #f0ebe2; border-radius: 30px; padding: 1.5rem; margin-bottom: 2rem; border: 2px dashed #b7ab9b; display: none; }
-    .admin-panel.visible { display: block; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { background: #f5f3f0; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
     
-    .add-item-form { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
-    .add-item-form input, .add-item-form select { padding: 0.6rem 1.2rem; border-radius: 40px; border: 1px solid #d6cdc0; background: white; font-size: 0.9rem; flex: 1 1 150px; }
-    .add-item-form input[type="file"] { padding: 0.4rem; flex: 1 1 200px; }
-    .add-item-form button { background: #2b2b3a; color: white; border: none; padding: 0.6rem 2rem; border-radius: 40px; cursor: pointer; font-weight: 500; transition: 0.2s; }
-    .add-item-form button:hover { background: #4a3f5e; }
-    .add-item-form button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* Image Preview */
-    .image-preview-container { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; width: 100%; }
-    .image-preview { position: relative; width: 80px; height: 80px; border-radius: 12px; overflow: hidden; border: 2px solid #d6cdc0; }
-    .image-preview img { width: 100%; height: 100%; object-fit: cover; }
-    .image-preview .remove-image { position: absolute; top: -6px; right: -6px; background: #ff6b6b; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; }
-
-    .upload-progress { width: 100%; height: 4px; background: #ddd; border-radius: 2px; margin: 0.5rem 0; overflow: hidden; }
-    .upload-progress-bar { height: 100%; background: #2d6a4f; width: 0%; transition: width 0.3s; }
-
-    /* Toolbar */
-    .toolbar { display: flex; flex-wrap: wrap; gap: 0.8rem 1rem; justify-content: space-between; align-items: center; background: white; padding: 0.8rem 1.5rem; border-radius: 60px; margin-bottom: 2.5rem; border: 1px solid #eae6dd; }
-    .search-box { display: flex; align-items: center; background: #f2efe9; border-radius: 40px; padding: 0.2rem 0.2rem 0.2rem 1.2rem; flex: 1 1 220px; }
-    .search-box input { border: none; background: transparent; padding: 0.6rem 0.8rem; font-size: 0.95rem; width: 100%; outline: none; }
-    .filter-group { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-    .filter-btn { background: #f2efe9; border: none; padding: 0.45rem 1.1rem; border-radius: 40px; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
-    .filter-btn.active { background: #2b2b3a; color: #f0ebe1; }
-
-    /* Catalog Grid */
-    .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.8rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 50px; margin-bottom: 20px; }
+    .header h1 { color: #2b2b3a; }
+    .badge { background: #e74c3c; color: white; padding: 2px 12px; border-radius: 20px; font-size: 12px; margin-left: 10px; }
+    .btn-owner { background: #2b2b3a; color: white; border: none; padding: 8px 20px; border-radius: 50px; cursor: pointer; }
+    .btn-owner.active { background: #2d6a4f; }
     
-    .product-card {
-      background: white;
-      border-radius: 28px;
-      padding: 1.2rem 1rem 1.5rem;
-      border: 1px solid #ece8e0;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      position: relative;
-      transition: all 0.2s ease;
-    }
-    .product-card:hover { transform: translateY(-4px); box-shadow: 0 18px 30px rgba(0,0,0,0.04); border-color: #d6cdc0; }
-
-    .product-card .delete-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #ff6b6b;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 28px;
-      height: 28px;
-      cursor: pointer;
-      display: none;
-      font-size: 0.8rem;
-      transition: 0.2s;
-      z-index: 10;
-    }
-    .product-card .delete-btn:hover { background: #c0392b; }
-    .product-card .delete-btn.visible { display: block; }
-
-    /* Image Carousel */
-    .image-carousel {
-      position: relative;
-      width: 100%;
-      height: 200px;
-      border-radius: 20px;
-      overflow: hidden;
-      background: #f2eee7;
-      margin-bottom: 1rem;
-    }
-    .image-carousel .slide {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: none;
-    }
-    .image-carousel .slide.active { display: block; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
+    .card { background: white; padding: 20px; border-radius: 20px; border: 1px solid #e0ddd8; }
+    .card .img { background: #f0ece5; height: 150px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 50px; color: #999; margin-bottom: 10px; }
+    .card h3 { font-size: 16px; margin-bottom: 5px; }
+    .card .tag { font-size: 11px; background: #f0ece5; padding: 2px 10px; border-radius: 20px; display: inline-block; }
+    .card .price { font-size: 20px; font-weight: bold; margin: 8px 0; }
+    .card .actions { display: flex; justify-content: space-between; border-top: 1px solid #f0ece5; padding-top: 10px; margin-top: 10px; }
+    .card .actions button { background: #2b2b3a; color: white; border: none; padding: 5px 15px; border-radius: 50px; cursor: pointer; }
     
-    .carousel-btn {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(0,0,0,0.5);
-      color: white;
-      border: none;
-      padding: 0.5rem 0.8rem;
-      cursor: pointer;
-      border-radius: 50%;
-      font-size: 0.8rem;
-      z-index: 5;
-      transition: 0.2s;
-    }
-    .carousel-btn:hover { background: rgba(0,0,0,0.8); }
-    .carousel-btn.prev { left: 5px; }
-    .carousel-btn.next { right: 5px; }
+    .loading { text-align: center; padding: 50px; color: #999; }
+    .loading i { font-size: 30px; display: block; margin-bottom: 10px; }
     
-    .carousel-dots {
-      position: absolute;
-      bottom: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 5px;
-      z-index: 5;
-    }
-    .carousel-dots .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.5);
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .carousel-dots .dot.active { background: white; }
-
-    .product-card .no-image {
-      width: 100%;
-      height: 200px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f2eee7;
-      border-radius: 20px;
-      font-size: 3rem;
-      color: #b7ab9b;
-      margin-bottom: 1rem;
-    }
-
-    .product-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.2rem; }
-    .category-tag { font-size: 0.7rem; text-transform: uppercase; color: #8a7e6d; background: #f0ebe2; padding: 0.2rem 0.8rem; border-radius: 30px; display: inline-block; margin: 0.3rem 0 0.6rem; align-self: flex-start; }
-    .price { font-weight: 600; font-size: 1.3rem; color: #2b2b3a; margin: 0.4rem 0 0.5rem; }
-    .card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 0.8rem; border-top: 1px solid #f0ece4; }
-    .btn-order { background: #2b2b3a; border: none; color: white; padding: 0.4rem 1.4rem; border-radius: 40px; font-weight: 500; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.15s; }
-    .btn-order:hover { background: #4a3f5e; }
-
-    .toast-message { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #1e1e2a; color: #f0ebe1; padding: 0.7rem 1.8rem; border-radius: 60px; font-size: 0.9rem; box-shadow: 0 12px 30px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.25s ease; pointer-events: none; z-index: 999; }
-    .toast-message.show { opacity: 1; }
-    .no-results { grid-column: 1 / -1; text-align: center; padding: 3rem; color: #999; }
-    .no-results i { font-size: 2.5rem; margin-bottom: 1rem; }
-    .loading { grid-column: 1 / -1; text-align: center; padding: 3rem; color: #999; }
-    .loading i { font-size: 2.5rem; margin-bottom: 1rem; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    @media (max-width: 768px) {
-      .shop-header { flex-direction: column; gap: 0.5rem; text-align: center; }
-      .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
-      .toolbar { flex-direction: column; align-items: stretch; }
-      .filter-group { justify-content: flex-start; }
-      .image-carousel { height: 150px; }
-    }
+    .admin-panel { background: #f0ece5; padding: 20px; border-radius: 20px; margin-bottom: 20px; display: none; border: 2px dashed #bbb; }
+    .admin-panel.show { display: block; }
+    .admin-panel form { display: flex; flex-wrap: wrap; gap: 10px; }
+    .admin-panel input, .admin-panel select { padding: 8px 15px; border-radius: 50px; border: 1px solid #ddd; flex: 1; min-width: 120px; }
+    .admin-panel button { background: #2b2b3a; color: white; border: none; padding: 8px 25px; border-radius: 50px; cursor: pointer; }
+    
+    .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .login-modal.show { display: flex; }
+    .login-box { background: white; padding: 30px; border-radius: 30px; max-width: 400px; width: 90%; }
+    .login-box h2 { text-align: center; margin-bottom: 20px; }
+    .login-box input { width: 100%; padding: 10px 15px; border-radius: 50px; border: 1px solid #ddd; margin-bottom: 10px; }
+    .login-box button { width: 100%; padding: 10px; border-radius: 50px; border: none; background: #2b2b3a; color: white; cursor: pointer; }
+    .login-box .hint { text-align: center; margin-top: 10px; font-size: 12px; color: #999; }
+    
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: white; padding: 10px 25px; border-radius: 50px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+    .toast.show { opacity: 1; }
+    
+    .debug { background: #1a1a2e; color: #0f0; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 12px; white-space: pre-wrap; word-wrap: break-word; max-height: 200px; overflow-y: auto; }
   </style>
 </head>
 <body>
 
-<div class="catalog-wrapper">
+<div class="container">
   <!-- Header -->
-  <header class="shop-header">
-    <h1><i class="fas fa-hand-sparkles"></i> personal shopper <span class="live-badge"><i class="fas fa-circle"></i> LIVE</span></h1>
-    <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <span class="shopper-badge"><i class="fas fa-user-tie"></i> stylist</span>
-      <button class="admin-toggle" id="adminToggle"><i class="fas fa-user-cog"></i> owner</button>
-    </div>
-  </header>
-
-  <!-- Login Modal -->
-  <div class="login-overlay" id="loginOverlay">
-    <div class="login-box">
-      <h2><i class="fas fa-lock"></i> Owner Login</h2>
-      <input type="password" id="adminPassword" placeholder="Enter owner password" autofocus>
-      <button id="loginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
-      <div class="hint"><i class="fas fa-key"></i> Default password: <strong>shopper123</strong></div>
+  <div class="header">
+    <h1>🛍️ personal shopper <span class="badge">LIVE</span></h1>
+    <div>
+      <span style="background:#2b2b3a;color:white;padding:5px 15px;border-radius:50px;font-size:14px;">👔 stylist</span>
+      <button class="btn-owner" id="ownerBtn">👤 owner</button>
     </div>
   </div>
 
   <!-- Admin Panel -->
   <div class="admin-panel" id="adminPanel">
-    <h3 style="margin-bottom: 0.8rem;"><i class="fas fa-plus-circle"></i> Add New Item</h3>
-    <form class="add-item-form" id="addItemForm">
+    <h3 style="margin-bottom:10px;">➕ Add Item</h3>
+    <form id="addForm">
       <input type="text" id="itemName" placeholder="Item name" required>
       <select id="itemCategory">
         <option value="clothing">Clothing</option>
         <option value="accessory">Accessory</option>
         <option value="footwear">Footwear</option>
       </select>
-      <input type="number" id="itemPrice" placeholder="Price $" required min="1">
-      
-      <!-- Image Upload Section -->
-      <div style="width: 100%;">
-        <label style="font-weight: 500; font-size: 0.9rem; display: block; margin-bottom: 0.3rem;">
-          <i class="fas fa-image"></i> Upload Images:
-        </label>
-        <input type="file" id="imageInput" accept="image/*" multiple>
-        <div class="image-preview-container" id="imagePreviewContainer"></div>
-        <div class="upload-progress" id="uploadProgress" style="display: none;">
-          <div class="upload-progress-bar" id="uploadProgressBar"></div>
-        </div>
-      </div>
-      
-      <button type="submit" id="addButton"><i class="fas fa-plus"></i> Add Item</button>
+      <input type="number" id="itemPrice" placeholder="Price $" required>
+      <button type="submit">Add</button>
     </form>
   </div>
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Search items..."></div>
-    <div class="filter-group">
+  <!-- Search & Filter -->
+  <div style="display:flex;flex-wrap:wrap;gap:10px;background:white;padding:10px 20px;border-radius:50px;margin-bottom:20px;">
+    <input type="text" id="searchBox" placeholder="Search..." style="flex:1;padding:8px 15px;border:none;background:#f5f3f0;border-radius:50px;min-width:150px;">
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
       <button class="filter-btn active" data-filter="all">All</button>
       <button class="filter-btn" data-filter="clothing">Clothing</button>
       <button class="filter-btn" data-filter="accessory">Accessory</button>
@@ -266,23 +90,36 @@
     </div>
   </div>
 
-  <!-- Catalog Grid -->
-  <div id="catalogGrid" class="catalog-grid">
-    <div class="loading"><i class="fas fa-spinner"></i><p>Loading catalog...</p></div>
+  <!-- Grid -->
+  <div id="grid" class="grid">
+    <div class="loading"><i>⏳</i><p>Loading catalog...</p></div>
+  </div>
+
+  <!-- Debug -->
+  <div class="debug" id="debug">⏳ Initializing...</div>
+</div>
+
+<!-- Login Modal -->
+<div class="login-modal" id="loginModal">
+  <div class="login-box">
+    <h2>🔐 Owner Login</h2>
+    <input type="password" id="passwordInput" placeholder="Enter password">
+    <button id="loginBtn">Login</button>
+    <div class="hint">Password: <strong>shopper123</strong></div>
   </div>
 </div>
 
 <!-- Toast -->
-<div id="toast" class="toast-message"><span id="toastText"></span></div>
+<div class="toast" id="toast"><span id="toastText"></span></div>
 
 <script>
   // ============================================================
-  // 🔥 YOUR FIREBASE CONFIG
+  // 🔥 FIREBASE CONFIG
   // ============================================================
   const firebaseConfig = {
     apiKey: "AIzaSyC56s2XW0555KV50DUDC09Y2PLSamymhY4",
     authDomain: "personal-shopper-catalog.firebaseapp.com",
-    databaseURL: "https://personal-shopper-catalog-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    databaseURL: "https://personal-shopper-catalog-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "personal-shopper-catalog",
     storageBucket: "personal-shopper-catalog.firebasestorage.app",
     messagingSenderId: "667091500667",
@@ -290,51 +127,76 @@
     measurementId: "G-VMZ5395NHM"
   };
 
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-  const storage = firebase.storage();
+  const debug = document.getElementById('debug');
+  
+  function log(msg) {
+    debug.textContent += '\n' + msg;
+    console.log(msg);
+  }
+
+  log('🚀 Starting...');
+  log('📋 Config URL: ' + firebaseConfig.databaseURL);
 
   // ============================================================
-  // 🔐 OWNER PASSWORD
+  // INIT FIREBASE
   // ============================================================
-  const OWNER_PASSWORD = 'shopper123';
+  let database;
+  
+  try {
+    firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+    log('✅ Firebase initialized!');
+  } catch (e) {
+    log('❌ Error: ' + e.message);
+    document.getElementById('grid').innerHTML = '<div style="color:red;text-align:center;padding:50px;">❌ ' + e.message + '</div>';
+  }
+
+  // ============================================================
+  // DEFAULT PRODUCTS
+  // ============================================================
+  const DEFAULT_PRODUCTS = [
+    { id: 1, name: "Linen Blazer", category: "clothing", price: 189, icon: "🧥" },
+    { id: 2, name: "Silk Scarf", category: "accessory", price: 45, icon: "🧣" },
+    { id: 3, name: "Leather Loafers", category: "footwear", price: 245, icon: "👞" },
+    { id: 4, name: "Cashmere Sweater", category: "clothing", price: 220, icon: "👕" },
+    { id: 5, name: "Gold Hoops", category: "accessory", price: 68, icon: "💍" },
+    { id: 6, name: "Suede Boots", category: "footwear", price: 310, icon: "👢" },
+    { id: 7, name: "Tailored Trousers", category: "clothing", price: 159, icon: "👖" },
+    { id: 8, name: "Leather Belt", category: "accessory", price: 89, icon: "🔗" },
+    { id: 9, name: "Canvas Sneakers", category: "footwear", price: 120, icon: "👟" },
+    { id: 10, name: "Wool Coat", category: "clothing", price: 375, icon: "🧥" },
+    { id: 11, name: "Pearl Necklace", category: "accessory", price: 145, icon: "📿" },
+    { id: 12, name: "Chelsea Boots", category: "footwear", price: 265, icon: "👢" }
+  ];
 
   // ============================================================
   // STATE
   // ============================================================
   let products = [];
-  let currentFilter = 'all';
-  let searchTerm = '';
+  let filter = 'all';
+  let search = '';
   let isAdmin = false;
-  let isFirstLoad = true;
-  let selectedFiles = [];
+  let isReady = false;
 
   // ============================================================
-  // DOM REFS
+  // DOM
   // ============================================================
-  const grid = document.getElementById('catalogGrid');
-  const searchInput = document.getElementById('searchInput');
+  const grid = document.getElementById('grid');
+  const searchBox = document.getElementById('searchBox');
   const filterBtns = document.querySelectorAll('.filter-btn');
   const toast = document.getElementById('toast');
   const toastText = document.getElementById('toastText');
-  const adminToggle = document.getElementById('adminToggle');
+  const ownerBtn = document.getElementById('ownerBtn');
   const adminPanel = document.getElementById('adminPanel');
-  const loginOverlay = document.getElementById('loginOverlay');
+  const loginModal = document.getElementById('loginModal');
   const loginBtn = document.getElementById('loginBtn');
-  const adminPassword = document.getElementById('adminPassword');
-  const addForm = document.getElementById('addItemForm');
-  const imageInput = document.getElementById('imageInput');
-  const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-  const uploadProgress = document.getElementById('uploadProgress');
-  const uploadProgressBar = document.getElementById('uploadProgressBar');
-  const addButton = document.getElementById('addButton');
+  const passwordInput = document.getElementById('passwordInput');
+  const addForm = document.getElementById('addForm');
 
   // ============================================================
   // TOAST
   // ============================================================
-  let toastTimer = null;
-
+  let toastTimer;
   function showToast(msg) {
     toastText.textContent = msg;
     toast.classList.add('show');
@@ -343,153 +205,89 @@
   }
 
   // ============================================================
-  // IMAGE PREVIEW
+  // SEED DATABASE
   // ============================================================
-  imageInput.addEventListener('change', function(e) {
-    selectedFiles = Array.from(e.target.files);
-    imagePreviewContainer.innerHTML = '';
-    
-    selectedFiles.forEach((file, index) => {
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const div = document.createElement('div');
-        div.className = 'image-preview';
-        div.innerHTML = `
-          <img src="${event.target.result}" alt="preview">
-          <button class="remove-image" data-index="${index}"><i class="fas fa-times"></i></button>
-        `;
-        imagePreviewContainer.appendChild(div);
-        
-        div.querySelector('.remove-image').addEventListener('click', function() {
-          selectedFiles.splice(index, 1);
-          imageInput.value = '';
-          imagePreviewContainer.innerHTML = '';
-          // Re-render preview
-          const newFiles = selectedFiles;
-          selectedFiles = [];
-          // Re-add remaining files
-          const dataTransfer = new DataTransfer();
-          newFiles.forEach(f => dataTransfer.items.add(f));
-          imageInput.files = dataTransfer.files;
-          selectedFiles = newFiles;
-          imageInput.dispatchEvent(new Event('change'));
-        });
-      };
-      reader.readAsDataURL(file);
-    });
-  });
+  async function seedDatabase() {
+    log('🌱 Seeding database...');
+    try {
+      for (const p of DEFAULT_PRODUCTS) {
+        const { id, ...data } = p;
+        await database.ref('products/' + id).set(data);
+      }
+      log('✅ Seeded ' + DEFAULT_PRODUCTS.length + ' products!');
+      showToast('📦 Added ' + DEFAULT_PRODUCTS.length + ' products!');
+    } catch (e) {
+      log('❌ Seed error: ' + e.message);
+    }
+  }
 
   // ============================================================
-  // UPLOAD IMAGES TO FIREBASE
+  // LISTEN TO DATABASE
   // ============================================================
-  async function uploadImages(productId) {
-    if (selectedFiles.length === 0) return [];
-    
-    uploadProgress.style.display = 'block';
-    const imageUrls = [];
-    
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const file = selectedFiles[i];
-      const storageRef = storage.ref(`products/${productId}/image_${Date.now()}_${i}`);
-      
-      try {
-        const snapshot = await storageRef.put(file);
-        const url = await snapshot.ref.getDownloadURL();
-        imageUrls.push(url);
-        
-        // Update progress
-        const progress = ((i + 1) / selectedFiles.length) * 100;
-        uploadProgressBar.style.width = progress + '%';
-      } catch (error) {
-        console.error('Upload error:', error);
-        showToast('⚠️ Failed to upload image: ' + file.name);
-        throw error;
-      }
+  function listenToDatabase() {
+    if (!database) {
+      log('❌ No database!');
+      return;
     }
     
-    uploadProgress.style.display = 'none';
-    uploadProgressBar.style.width = '0%';
-    return imageUrls;
-  }
-
-  // ============================================================
-  // FIREBASE: REAL-TIME LISTENER
-  // ============================================================
-  function listenForChanges() {
-    const productsRef = database.ref('products');
+    log('👂 Listening...');
+    const ref = database.ref('products');
     
-    productsRef.on('value', (snapshot) => {
+    ref.on('value', async (snapshot) => {
+      log('📥 Data received!');
       const data = snapshot.val();
       
-      if (data) {
-        products = Object.keys(data).map(key => ({
-          id: parseInt(key),
-          ...data[key],
-          images: data[key].images || []
-        }));
-        products.sort((a, b) => a.id - b.id);
+      if (!data) {
+        log('📭 Empty, seeding...');
+        await seedDatabase();
+        const newSnapshot = await ref.once('value');
+        const newData = newSnapshot.val();
+        if (newData) {
+          products = Object.keys(newData).map(key => ({ id: parseInt(key), ...newData[key] }));
+          products.sort((a, b) => a.id - b.id);
+        }
       } else {
-        products = [];
+        products = Object.keys(data).map(key => ({ id: parseInt(key), ...data[key] }));
+        products.sort((a, b) => a.id - b.id);
       }
       
-      if (isFirstLoad) {
-        isFirstLoad = false;
-        showToast('📡 Connected to live catalog!');
-      }
-      
-      renderCatalog();
+      isReady = true;
+      log('✅ Loaded ' + products.length + ' products');
+      render();
+    }, (error) => {
+      log('❌ Error: ' + error.message);
+      grid.innerHTML = '<div style="color:red;text-align:center;padding:50px;">❌ ' + error.message + '</div>';
     });
   }
 
   // ============================================================
-  // RENDER CATALOG WITH IMAGES
+  // RENDER
   // ============================================================
-  function renderCatalog() {
+  function render() {
+    if (!isReady) return;
+    
     const filtered = products.filter(p => {
-      if (currentFilter !== 'all' && p.category !== currentFilter) return false;
-      if (searchTerm.trim() !== '') {
-        return p.name.toLowerCase().includes(searchTerm.trim().toLowerCase());
-      }
+      if (filter !== 'all' && p.category !== filter) return false;
+      if (search.trim()) return p.name.toLowerCase().includes(search.toLowerCase());
       return true;
     });
 
     if (filtered.length === 0) {
-      grid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><p>No items found</p></div>`;
+      grid.innerHTML = '<div style="text-align:center;padding:50px;color:#999;">📭 No items found</div>';
       return;
     }
 
     let html = '';
     filtered.forEach(p => {
-      const hasImages = p.images && p.images.length > 0;
-      
       html += `
-        <div class="product-card" data-id="${p.id}">
-          ${isAdmin ? `<button class="delete-btn visible" onclick="deleteProduct(${p.id})"><i class="fas fa-trash"></i></button>` : ''}
-          
-          ${hasImages ? `
-            <div class="image-carousel" id="carousel-${p.id}">
-              ${p.images.map((img, idx) => `
-                <img class="slide ${idx === 0 ? 'active' : ''}" src="${img}" alt="${p.name}">
-              `).join('')}
-              <button class="carousel-btn prev" onclick="changeSlide(${p.id}, -1)"><i class="fas fa-chevron-left"></i></button>
-              <button class="carousel-btn next" onclick="changeSlide(${p.id}, 1)"><i class="fas fa-chevron-right"></i></button>
-              <div class="carousel-dots">
-                ${p.images.map((_, idx) => `
-                  <span class="dot ${idx === 0 ? 'active' : ''}" onclick="goToSlide(${p.id}, ${idx})"></span>
-                `).join('')}
-              </div>
-            </div>
-          ` : `
-            <div class="no-image">
-              <i class="fas fa-image"></i>
-            </div>
-          `}
-          
+        <div class="card">
+          ${isAdmin ? `<button onclick="deleteProduct(${p.id})" style="float:right;background:#ff6b6b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` : ''}
+          <div class="img">${p.icon || '📦'}</div>
           <h3>${p.name}</h3>
-          <span class="category-tag">${p.category}</span>
+          <span class="tag">${p.category}</span>
           <div class="price">$${p.price}</div>
-          <div class="card-actions">
-            <button class="btn-order" onclick="orderProduct(${p.id})"><i class="fas fa-shopping-bag"></i> order</button>
+          <div class="actions">
+            <button onclick="orderProduct(${p.id})">🛒 order</button>
           </div>
         </div>
       `;
@@ -499,200 +297,82 @@
   }
 
   // ============================================================
-  // CAROUSEL CONTROLS
-  // ============================================================
-  function changeSlide(productId, direction) {
-    const carousel = document.getElementById(`carousel-${productId}`);
-    if (!carousel) return;
-    
-    const slides = carousel.querySelectorAll('.slide');
-    const dots = carousel.querySelectorAll('.dot');
-    let currentIndex = Array.from(slides).findIndex(s => s.classList.contains('active'));
-    
-    slides[currentIndex].classList.remove('active');
-    dots[currentIndex].classList.remove('active');
-    
-    currentIndex = (currentIndex + direction + slides.length) % slides.length;
-    
-    slides[currentIndex].classList.add('active');
-    dots[currentIndex].classList.add('active');
-  }
-
-  function goToSlide(productId, index) {
-    const carousel = document.getElementById(`carousel-${productId}`);
-    if (!carousel) return;
-    
-    const slides = carousel.querySelectorAll('.slide');
-    const dots = carousel.querySelectorAll('.dot');
-    
-    slides.forEach(s => s.classList.remove('active'));
-    dots.forEach(d => d.classList.remove('active'));
-    
-    slides[index].classList.add('active');
-    dots[index].classList.add('active');
-  }
-
-  // ============================================================
-  // FIREBASE: ADD PRODUCT WITH IMAGES
-  // ============================================================
-  async function addProductToFirebase(name, category, price, imageUrls) {
-    try {
-      const snapshot = await database.ref('products').once('value');
-      const data = snapshot.val();
-      let maxId = 0;
-      
-      if (data) {
-        const ids = Object.keys(data).map(Number);
-        maxId = Math.max(...ids);
-      }
-      
-      const newId = maxId + 1;
-      
-      const newProduct = {
-        name: name,
-        category: category,
-        price: price,
-        images: imageUrls || [],
-        icon: getIconForCategory(category)
-      };
-      
-      await database.ref('products/' + newId).set(newProduct);
-      showToast(`✅ "${name}" added with ${imageUrls.length} image(s)!`);
-    } catch (error) {
-      console.error('Error adding product:', error);
-      showToast('⚠️ Failed to add item');
-      throw error;
-    }
-  }
-
-  // ============================================================
-  // FIREBASE: DELETE PRODUCT
-  // ============================================================
-  async function deleteProductFromFirebase(id) {
-    try {
-      // Also delete images from storage
-      const product = products.find(p => p.id === id);
-      if (product && product.images && product.images.length > 0) {
-        // Delete images from storage (optional - but good practice)
-        // Note: You'd need to know the storage paths
-      }
-      
-      await database.ref('products/' + id).remove();
-      showToast('🗑️ Item deleted');
-    } catch (error) {
-      console.error('Error deleting product:', error);
-      showToast('⚠️ Failed to delete item');
-    }
-  }
-
-  // ============================================================
   // ACTIONS
   // ============================================================
   function orderProduct(id) {
-    const product = products.find(p => p.id === id);
-    if (product) {
-      showToast(`🛍️ Added to bag: ${product.name}`);
-    }
+    const p = products.find(x => x.id === id);
+    if (p) showToast('🛍️ Added: ' + p.name);
   }
 
   function deleteProduct(id) {
-    if (!isAdmin) {
-      showToast('⛔ Only owner can delete items');
-      return;
-    }
-    if (!confirm('Delete this item?')) return;
-    deleteProductFromFirebase(id);
+    if (!isAdmin) { showToast('⛔ Owner only'); return; }
+    if (!confirm('Delete?')) return;
+    database.ref('products/' + id).remove()
+      .then(() => showToast('🗑️ Deleted'))
+      .catch(() => showToast('⚠️ Error'));
   }
 
   // ============================================================
-  // ADMIN LOGIN / LOGOUT
+  // ADMIN LOGIN
   // ============================================================
+  const PASSWORD = 'shopper123';
+
   function login(password) {
-    if (password === OWNER_PASSWORD) {
+    if (password === PASSWORD) {
       isAdmin = true;
-      loginOverlay.classList.remove('visible');
-      adminPanel.classList.add('visible');
-      adminToggle.classList.add('is-admin');
-      adminToggle.innerHTML = '<i class="fas fa-user-cog"></i> owner ✓';
-      showToast('🔓 Owner access granted');
-      renderCatalog();
-      adminPassword.value = '';
+      loginModal.classList.remove('show');
+      adminPanel.classList.add('show');
+      ownerBtn.textContent = '👑 owner ✓';
+      ownerBtn.classList.add('active');
+      showToast('🔓 Owner mode');
+      passwordInput.value = '';
+      render();
     } else {
-      showToast('⛔ Incorrect password');
-      adminPassword.value = '';
-      adminPassword.focus();
+      showToast('⛔ Wrong password');
+      passwordInput.value = '';
+      passwordInput.focus();
     }
   }
 
   function logout() {
     isAdmin = false;
-    adminPanel.classList.remove('visible');
-    adminToggle.classList.remove('is-admin');
-    adminToggle.innerHTML = '<i class="fas fa-user-cog"></i> owner';
+    adminPanel.classList.remove('show');
+    ownerBtn.textContent = '👤 owner';
+    ownerBtn.classList.remove('active');
     showToast('🔒 Logged out');
-    renderCatalog();
-  }
-
-  function getIconForCategory(cat) {
-    const map = {
-      'clothing': 'fa-tshirt',
-      'accessory': 'fa-gem',
-      'footwear': 'fa-shoe-prints'
-    };
-    return map[cat] || 'fa-box';
+    render();
   }
 
   // ============================================================
-  // EVENT LISTENERS
+  // EVENTS
   // ============================================================
-  adminToggle.addEventListener('click', () => {
-    if (isAdmin) {
-      logout();
-    } else {
-      loginOverlay.classList.add('visible');
-      adminPassword.focus();
-    }
+  ownerBtn.addEventListener('click', () => {
+    if (isAdmin) logout();
+    else loginModal.classList.add('show');
   });
 
-  loginBtn.addEventListener('click', () => {
-    login(adminPassword.value);
+  loginBtn.addEventListener('click', () => login(passwordInput.value));
+  passwordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') login(passwordInput.value);
   });
-
-  adminPassword.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      login(adminPassword.value);
-    }
-  });
-
-  loginOverlay.addEventListener('click', (e) => {
-    if (e.target === loginOverlay) {
-      loginOverlay.classList.remove('visible');
-      adminPassword.value = '';
+  loginModal.addEventListener('click', (e) => {
+    if (e.target === loginModal) {
+      loginModal.classList.remove('show');
+      passwordInput.value = '';
     }
   });
 
   addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    if (!isAdmin) {
-      showToast('⛔ Only owner can add items');
-      return;
-    }
+    if (!isAdmin) { showToast('⛔ Owner only'); return; }
 
     const name = document.getElementById('itemName').value.trim();
     const category = document.getElementById('itemCategory').value;
     const price = parseInt(document.getElementById('itemPrice').value);
 
-    if (!name || !price) {
-      showToast('⚠️ Please fill all fields');
-      return;
-    }
-
-    addButton.disabled = true;
-    addButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+    if (!name || !price) { showToast('⚠️ Fill all fields'); return; }
 
     try {
-      // First get a product ID
       const snapshot = await database.ref('products').once('value');
       const data = snapshot.val();
       let maxId = 0;
@@ -702,43 +382,50 @@
       }
       const newId = maxId + 1;
 
-      // Upload images if any
-      let imageUrls = [];
-      if (selectedFiles.length > 0) {
-        imageUrls = await uploadImages(newId);
-      }
-
-      // Add product to database
-      const newProduct = {
-        name: name,
-        category: category,
-        price: price,
-        images: imageUrls,
-        icon: getIconForCategory(category)
-      };
-
-      await database.ref('products/' + newId).set(newProduct);
-      showToast(`✅ "${name}" added with ${imageUrls.length} image(s)!`);
-      
-      // Reset form
+      await database.ref('products/' + newId).set({
+        name, category, price,
+        icon: getIcon(category)
+      });
+      showToast('✅ Added: ' + name);
       addForm.reset();
-      imagePreviewContainer.innerHTML = '';
-      selectedFiles = [];
-      imageInput.value = '';
-      uploadProgress.style.display = 'none';
-      uploadProgressBar.style.width = '0%';
-      
-    } catch (error) {
-      console.error('Error:', error);
-      showToast('⚠️ Failed to add item');
-    } finally {
-      addButton.disabled = false;
-      addButton.innerHTML = '<i class="fas fa-plus"></i> Add Item';
+    } catch (e) {
+      showToast('⚠️ Error');
+      log('❌ Add error: ' + e.message);
     }
   });
+
+  function getIcon(cat) {
+    const map = { 'clothing': '👕', 'accessory': '💎', 'footwear': '👟' };
+    return map[cat] || '📦';
+  }
 
   filterBtns.forEach(btn => {
     btn.addEventListener('click', function() {
       filterBtns.forEach(b => b.classList.remove('active'));
       this.classList.add('active');
-      currentFilter = this.dataset.filter
+      filter = this.dataset.filter;
+      render();
+    });
+  });
+
+  let debounce;
+  searchBox.addEventListener('input', function() {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      search = this.value;
+      render();
+    }, 200);
+  });
+
+  // ============================================================
+  // START
+  // ============================================================
+  if (database) {
+    listenToDatabase();
+    log('🔥 Ready!');
+    log('🔑 Password: ' + PASSWORD);
+  }
+</script>
+
+</body>
+</html>
