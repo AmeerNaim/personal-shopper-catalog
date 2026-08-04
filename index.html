@@ -1,431 +1,428 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Personal Shopper</title>
-  
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-    body { background: #f5f3f0; padding: 20px; }
-    .container { max-width: 1200px; margin: 0 auto; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Shopper</title>
     
-    .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 50px; margin-bottom: 20px; }
-    .header h1 { color: #2b2b3a; }
-    .badge { background: #e74c3c; color: white; padding: 2px 12px; border-radius: 20px; font-size: 12px; margin-left: 10px; }
-    .btn-owner { background: #2b2b3a; color: white; border: none; padding: 8px 20px; border-radius: 50px; cursor: pointer; }
-    .btn-owner.active { background: #2d6a4f; }
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
-    .card { background: white; padding: 20px; border-radius: 20px; border: 1px solid #e0ddd8; }
-    .card .img { background: #f0ece5; height: 150px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 50px; color: #999; margin-bottom: 10px; }
-    .card h3 { font-size: 16px; margin-bottom: 5px; }
-    .card .tag { font-size: 11px; background: #f0ece5; padding: 2px 10px; border-radius: 20px; display: inline-block; }
-    .card .price { font-size: 20px; font-weight: bold; margin: 8px 0; }
-    .card .actions { display: flex; justify-content: space-between; border-top: 1px solid #f0ece5; padding-top: 10px; margin-top: 10px; }
-    .card .actions button { background: #2b2b3a; color: white; border: none; padding: 5px 15px; border-radius: 50px; cursor: pointer; }
-    
-    .loading { text-align: center; padding: 50px; color: #999; }
-    .loading i { font-size: 30px; display: block; margin-bottom: 10px; }
-    
-    .admin-panel { background: #f0ece5; padding: 20px; border-radius: 20px; margin-bottom: 20px; display: none; border: 2px dashed #bbb; }
-    .admin-panel.show { display: block; }
-    .admin-panel form { display: flex; flex-wrap: wrap; gap: 10px; }
-    .admin-panel input, .admin-panel select { padding: 8px 15px; border-radius: 50px; border: 1px solid #ddd; flex: 1; min-width: 120px; }
-    .admin-panel button { background: #2b2b3a; color: white; border: none; padding: 8px 25px; border-radius: 50px; cursor: pointer; }
-    
-    .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-    .login-modal.show { display: flex; }
-    .login-box { background: white; padding: 30px; border-radius: 30px; max-width: 400px; width: 90%; }
-    .login-box h2 { text-align: center; margin-bottom: 20px; }
-    .login-box input { width: 100%; padding: 10px 15px; border-radius: 50px; border: 1px solid #ddd; margin-bottom: 10px; }
-    .login-box button { width: 100%; padding: 10px; border-radius: 50px; border: none; background: #2b2b3a; color: white; cursor: pointer; }
-    .login-box .hint { text-align: center; margin-top: 10px; font-size: 12px; color: #999; }
-    
-    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: white; padding: 10px 25px; border-radius: 50px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
-    .toast.show { opacity: 1; }
-    
-    .debug { background: #1a1a2e; color: #0f0; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 12px; white-space: pre-wrap; word-wrap: break-word; max-height: 200px; overflow-y: auto; }
-  </style>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #f5f3f0; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 25px; border-radius: 50px; margin-bottom: 20px; }
+        .header h1 { color: #2b2b3a; font-size: 24px; }
+        .badge { background: #e74c3c; color: white; padding: 2px 12px; border-radius: 20px; font-size: 12px; margin-left: 10px; }
+        .btn-owner { background: #2b2b3a; color: white; border: none; padding: 8px 20px; border-radius: 50px; cursor: pointer; font-size: 14px; }
+        .btn-owner.active { background: #2d6a4f; }
+        .admin-panel { background: #f0ece5; padding: 20px; border-radius: 20px; margin-bottom: 20px; display: none; }
+        .admin-panel.show { display: block; }
+        .admin-panel form { display: flex; flex-wrap: wrap; gap: 10px; }
+        .admin-panel input, .admin-panel select { padding: 10px 15px; border-radius: 50px; border: 1px solid #ddd; flex: 1; min-width: 120px; }
+        .admin-panel button { background: #2b2b3a; color: white; border: none; padding: 10px 25px; border-radius: 50px; cursor: pointer; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 10px; background: white; padding: 10px 20px; border-radius: 50px; margin-bottom: 20px; }
+        .toolbar input { flex: 1; padding: 8px 15px; border: none; background: #f5f3f0; border-radius: 50px; min-width: 150px; }
+        .filters { display: flex; gap: 5px; flex-wrap: wrap; }
+        .filters button { padding: 6px 15px; border: none; background: #f0ece5; border-radius: 50px; cursor: pointer; }
+        .filters button.active { background: #2b2b3a; color: white; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 20px; border: 1px solid #e0ddd8; position: relative; }
+        .card .img { background: #f0ece5; height: 150px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 50px; margin-bottom: 10px; }
+        .card h3 { font-size: 16px; margin-bottom: 5px; }
+        .card .tag { font-size: 11px; background: #f0ece5; padding: 2px 10px; border-radius: 20px; display: inline-block; }
+        .card .price { font-size: 20px; font-weight: bold; margin: 8px 0; }
+        .card .actions { display: flex; justify-content: space-between; border-top: 1px solid #f0ece5; padding-top: 10px; margin-top: 10px; }
+        .card .actions button { background: #2b2b3a; color: white; border: none; padding: 5px 15px; border-radius: 50px; cursor: pointer; }
+        .card .delete-btn { position: absolute; top: 10px; right: 10px; background: #ff6b6b; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; display: none; }
+        .card .delete-btn.show { display: block; }
+        .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .login-modal.show { display: flex; }
+        .login-box { background: white; padding: 30px; border-radius: 30px; max-width: 400px; width: 90%; }
+        .login-box h2 { text-align: center; margin-bottom: 20px; }
+        .login-box input { width: 100%; padding: 10px 15px; border-radius: 50px; border: 1px solid #ddd; margin-bottom: 10px; }
+        .login-box button { width: 100%; padding: 10px; border-radius: 50px; border: none; background: #2b2b3a; color: white; cursor: pointer; }
+        .login-box .hint { text-align: center; margin-top: 10px; font-size: 12px; color: #999; }
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a2e; color: white; padding: 10px 25px; border-radius: 50px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+        .toast.show { opacity: 1; }
+        .loading { text-align: center; padding: 50px; color: #999; grid-column: 1 / -1; }
+        .loading i { font-size: 30px; display: block; margin-bottom: 10px; }
+        .error { text-align: center; padding: 50px; color: #e74c3c; grid-column: 1 / -1; }
+        .debug { background: #1a1a2e; color: #0f0; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 12px; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; grid-column: 1 / -1; }
+        @media (max-width: 600px) { .header { flex-direction: column; gap: 10px; text-align: center; } .toolbar { flex-direction: column; } }
+    </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Header -->
-  <div class="header">
-    <h1>🛍️ personal shopper <span class="badge">LIVE</span></h1>
-    <div>
-      <span style="background:#2b2b3a;color:white;padding:5px 15px;border-radius:50px;font-size:14px;">👔 stylist</span>
-      <button class="btn-owner" id="ownerBtn">👤 owner</button>
-    </div>
-  </div>
-
-  <!-- Admin Panel -->
-  <div class="admin-panel" id="adminPanel">
-    <h3 style="margin-bottom:10px;">➕ Add Item</h3>
-    <form id="addForm">
-      <input type="text" id="itemName" placeholder="Item name" required>
-      <select id="itemCategory">
-        <option value="clothing">Clothing</option>
-        <option value="accessory">Accessory</option>
-        <option value="footwear">Footwear</option>
-      </select>
-      <input type="number" id="itemPrice" placeholder="Price $" required>
-      <button type="submit">Add</button>
-    </form>
-  </div>
-
-  <!-- Search & Filter -->
-  <div style="display:flex;flex-wrap:wrap;gap:10px;background:white;padding:10px 20px;border-radius:50px;margin-bottom:20px;">
-    <input type="text" id="searchBox" placeholder="Search..." style="flex:1;padding:8px 15px;border:none;background:#f5f3f0;border-radius:50px;min-width:150px;">
-    <div style="display:flex;gap:5px;flex-wrap:wrap;">
-      <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="clothing">Clothing</button>
-      <button class="filter-btn" data-filter="accessory">Accessory</button>
-      <button class="filter-btn" data-filter="footwear">Footwear</button>
-    </div>
-  </div>
-
-  <!-- Grid -->
-  <div id="grid" class="grid">
-    <div class="loading"><i>⏳</i><p>Loading catalog...</p></div>
-  </div>
-
-  <!-- Debug -->
-  <div class="debug" id="debug">⏳ Initializing...</div>
-</div>
-
-<!-- Login Modal -->
-<div class="login-modal" id="loginModal">
-  <div class="login-box">
-    <h2>🔐 Owner Login</h2>
-    <input type="password" id="passwordInput" placeholder="Enter password">
-    <button id="loginBtn">Login</button>
-    <div class="hint">Password: <strong>shopper123</strong></div>
-  </div>
-</div>
-
-<!-- Toast -->
-<div class="toast" id="toast"><span id="toastText"></span></div>
-
-<script>
-  // ============================================================
-  // 🔥 FIREBASE CONFIG
-  // ============================================================
-  const firebaseConfig = {
-    apiKey: "AIzaSyC56s2XW0555KV50DUDC09Y2PLSamymhY4",
-    authDomain: "personal-shopper-catalog.firebaseapp.com",
-    databaseURL: "https://personal-shopper-catalog-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "personal-shopper-catalog",
-    storageBucket: "personal-shopper-catalog.firebasestorage.app",
-    messagingSenderId: "667091500667",
-    appId: "1:667091500667:web:97831dc42ea6108726ecde",
-    measurementId: "G-VMZ5395NHM"
-  };
-
-  const debug = document.getElementById('debug');
-  
-  function log(msg) {
-    debug.textContent += '\n' + msg;
-    console.log(msg);
-  }
-
-  log('🚀 Starting...');
-  log('📋 Config URL: ' + firebaseConfig.databaseURL);
-
-  // ============================================================
-  // INIT FIREBASE
-  // ============================================================
-  let database;
-  
-  try {
-    firebase.initializeApp(firebaseConfig);
-    database = firebase.database();
-    log('✅ Firebase initialized!');
-  } catch (e) {
-    log('❌ Error: ' + e.message);
-    document.getElementById('grid').innerHTML = '<div style="color:red;text-align:center;padding:50px;">❌ ' + e.message + '</div>';
-  }
-
-  // ============================================================
-  // DEFAULT PRODUCTS
-  // ============================================================
-  const DEFAULT_PRODUCTS = [
-    { id: 1, name: "Linen Blazer", category: "clothing", price: 189, icon: "🧥" },
-    { id: 2, name: "Silk Scarf", category: "accessory", price: 45, icon: "🧣" },
-    { id: 3, name: "Leather Loafers", category: "footwear", price: 245, icon: "👞" },
-    { id: 4, name: "Cashmere Sweater", category: "clothing", price: 220, icon: "👕" },
-    { id: 5, name: "Gold Hoops", category: "accessory", price: 68, icon: "💍" },
-    { id: 6, name: "Suede Boots", category: "footwear", price: 310, icon: "👢" },
-    { id: 7, name: "Tailored Trousers", category: "clothing", price: 159, icon: "👖" },
-    { id: 8, name: "Leather Belt", category: "accessory", price: 89, icon: "🔗" },
-    { id: 9, name: "Canvas Sneakers", category: "footwear", price: 120, icon: "👟" },
-    { id: 10, name: "Wool Coat", category: "clothing", price: 375, icon: "🧥" },
-    { id: 11, name: "Pearl Necklace", category: "accessory", price: 145, icon: "📿" },
-    { id: 12, name: "Chelsea Boots", category: "footwear", price: 265, icon: "👢" }
-  ];
-
-  // ============================================================
-  // STATE
-  // ============================================================
-  let products = [];
-  let filter = 'all';
-  let search = '';
-  let isAdmin = false;
-  let isReady = false;
-
-  // ============================================================
-  // DOM
-  // ============================================================
-  const grid = document.getElementById('grid');
-  const searchBox = document.getElementById('searchBox');
-  const filterBtns = document.querySelectorAll('.filter-btn');
-  const toast = document.getElementById('toast');
-  const toastText = document.getElementById('toastText');
-  const ownerBtn = document.getElementById('ownerBtn');
-  const adminPanel = document.getElementById('adminPanel');
-  const loginModal = document.getElementById('loginModal');
-  const loginBtn = document.getElementById('loginBtn');
-  const passwordInput = document.getElementById('passwordInput');
-  const addForm = document.getElementById('addForm');
-
-  // ============================================================
-  // TOAST
-  // ============================================================
-  let toastTimer;
-  function showToast(msg) {
-    toastText.textContent = msg;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
-  }
-
-  // ============================================================
-  // SEED DATABASE
-  // ============================================================
-  async function seedDatabase() {
-    log('🌱 Seeding database...');
-    try {
-      for (const p of DEFAULT_PRODUCTS) {
-        const { id, ...data } = p;
-        await database.ref('products/' + id).set(data);
-      }
-      log('✅ Seeded ' + DEFAULT_PRODUCTS.length + ' products!');
-      showToast('📦 Added ' + DEFAULT_PRODUCTS.length + ' products!');
-    } catch (e) {
-      log('❌ Seed error: ' + e.message);
-    }
-  }
-
-  // ============================================================
-  // LISTEN TO DATABASE
-  // ============================================================
-  function listenToDatabase() {
-    if (!database) {
-      log('❌ No database!');
-      return;
-    }
-    
-    log('👂 Listening...');
-    const ref = database.ref('products');
-    
-    ref.on('value', async (snapshot) => {
-      log('📥 Data received!');
-      const data = snapshot.val();
-      
-      if (!data) {
-        log('📭 Empty, seeding...');
-        await seedDatabase();
-        const newSnapshot = await ref.once('value');
-        const newData = newSnapshot.val();
-        if (newData) {
-          products = Object.keys(newData).map(key => ({ id: parseInt(key), ...newData[key] }));
-          products.sort((a, b) => a.id - b.id);
-        }
-      } else {
-        products = Object.keys(data).map(key => ({ id: parseInt(key), ...data[key] }));
-        products.sort((a, b) => a.id - b.id);
-      }
-      
-      isReady = true;
-      log('✅ Loaded ' + products.length + ' products');
-      render();
-    }, (error) => {
-      log('❌ Error: ' + error.message);
-      grid.innerHTML = '<div style="color:red;text-align:center;padding:50px;">❌ ' + error.message + '</div>';
-    });
-  }
-
-  // ============================================================
-  // RENDER
-  // ============================================================
-  function render() {
-    if (!isReady) return;
-    
-    const filtered = products.filter(p => {
-      if (filter !== 'all' && p.category !== filter) return false;
-      if (search.trim()) return p.name.toLowerCase().includes(search.toLowerCase());
-      return true;
-    });
-
-    if (filtered.length === 0) {
-      grid.innerHTML = '<div style="text-align:center;padding:50px;color:#999;">📭 No items found</div>';
-      return;
-    }
-
-    let html = '';
-    filtered.forEach(p => {
-      html += `
-        <div class="card">
-          ${isAdmin ? `<button onclick="deleteProduct(${p.id})" style="float:right;background:#ff6b6b;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;">✕</button>` : ''}
-          <div class="img">${p.icon || '📦'}</div>
-          <h3>${p.name}</h3>
-          <span class="tag">${p.category}</span>
-          <div class="price">$${p.price}</div>
-          <div class="actions">
-            <button onclick="orderProduct(${p.id})">🛒 order</button>
-          </div>
+    <!-- HEADER -->
+    <div class="header">
+        <h1>🛍️ personal shopper <span class="badge">LIVE</span></h1>
+        <div>
+            <span style="background:#2b2b3a;color:white;padding:5px 15px;border-radius:50px;font-size:14px;">👔 stylist</span>
+            <button class="btn-owner" id="ownerBtn">👤 owner</button>
         </div>
-      `;
-    });
+    </div>
 
-    grid.innerHTML = html;
-  }
+    <!-- ADMIN PANEL -->
+    <div class="admin-panel" id="adminPanel">
+        <h3 style="margin-bottom:10px;">➕ Add New Item</h3>
+        <form id="addForm">
+            <input type="text" id="itemName" placeholder="Item name" required>
+            <select id="itemCategory">
+                <option value="clothing">Clothing</option>
+                <option value="accessory">Accessory</option>
+                <option value="footwear">Footwear</option>
+            </select>
+            <input type="number" id="itemPrice" placeholder="Price $" required>
+            <button type="submit">Add Item</button>
+        </form>
+    </div>
 
-  // ============================================================
-  // ACTIONS
-  // ============================================================
-  function orderProduct(id) {
-    const p = products.find(x => x.id === id);
-    if (p) showToast('🛍️ Added: ' + p.name);
-  }
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <input type="text" id="searchBox" placeholder="Search items...">
+        <div class="filters">
+            <button class="active" data-filter="all">All</button>
+            <button data-filter="clothing">Clothing</button>
+            <button data-filter="accessory">Accessory</button>
+            <button data-filter="footwear">Footwear</button>
+        </div>
+    </div>
 
-  function deleteProduct(id) {
-    if (!isAdmin) { showToast('⛔ Owner only'); return; }
-    if (!confirm('Delete?')) return;
-    database.ref('products/' + id).remove()
-      .then(() => showToast('🗑️ Deleted'))
-      .catch(() => showToast('⚠️ Error'));
-  }
+    <!-- GRID -->
+    <div class="grid" id="grid">
+        <div class="loading"><i>⏳</i><p>Loading catalog...</p></div>
+    </div>
 
-  // ============================================================
-  // ADMIN LOGIN
-  // ============================================================
-  const PASSWORD = 'shopper123';
+    <!-- LOGIN MODAL -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-box">
+            <h2>🔐 Owner Login</h2>
+            <input type="password" id="passwordInput" placeholder="Enter password">
+            <button id="loginBtn">Login</button>
+            <div class="hint">Password: <strong>shopper123</strong></div>
+        </div>
+    </div>
 
-  function login(password) {
-    if (password === PASSWORD) {
-      isAdmin = true;
-      loginModal.classList.remove('show');
-      adminPanel.classList.add('show');
-      ownerBtn.textContent = '👑 owner ✓';
-      ownerBtn.classList.add('active');
-      showToast('🔓 Owner mode');
-      passwordInput.value = '';
-      render();
-    } else {
-      showToast('⛔ Wrong password');
-      passwordInput.value = '';
-      passwordInput.focus();
-    }
-  }
+    <!-- TOAST -->
+    <div class="toast" id="toast"><span id="toastText"></span></div>
 
-  function logout() {
-    isAdmin = false;
-    adminPanel.classList.remove('show');
-    ownerBtn.textContent = '👤 owner';
-    ownerBtn.classList.remove('active');
-    showToast('🔒 Logged out');
-    render();
-  }
+    <script>
+        // ============================================================
+        // STEP 1: CHECK IF JAVASCRIPT RUNS
+        // ============================================================
+        console.log('✅ JavaScript loaded!');
+        document.querySelector('.loading p').textContent = 'JavaScript loaded, connecting to Firebase...';
 
-  // ============================================================
-  // EVENTS
-  // ============================================================
-  ownerBtn.addEventListener('click', () => {
-    if (isAdmin) logout();
-    else loginModal.classList.add('show');
-  });
+        // ============================================================
+        // 🔥 FIREBASE CONFIG
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyC56s2XW0555KV50DUDC09Y2PLSamymhY4",
+            authDomain: "personal-shopper-catalog.firebaseapp.com",
+            databaseURL: "https://personal-shopper-catalog-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "personal-shopper-catalog",
+            storageBucket: "personal-shopper-catalog.firebasestorage.app",
+            messagingSenderId: "667091500667",
+            appId: "1:667091500667:web:97831dc42ea6108726ecde",
+            measurementId: "G-VMZ5395NHM"
+        };
 
-  loginBtn.addEventListener('click', () => login(passwordInput.value));
-  passwordInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') login(passwordInput.value);
-  });
-  loginModal.addEventListener('click', (e) => {
-    if (e.target === loginModal) {
-      loginModal.classList.remove('show');
-      passwordInput.value = '';
-    }
-  });
+        // ============================================================
+        // INIT FIREBASE
+        // ============================================================
+        let database;
+        
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            console.log('✅ Firebase initialized!');
+            document.querySelector('.loading p').textContent = '✅ Firebase connected! Loading products...';
+        } catch (e) {
+            console.error('❌ Firebase error:', e);
+            document.getElementById('grid').innerHTML = `<div class="error">❌ Firebase Error: ${e.message}</div>`;
+        }
 
-  addForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!isAdmin) { showToast('⛔ Owner only'); return; }
+        // ============================================================
+        // DEFAULT PRODUCTS
+        // ============================================================
+        const DEFAULT_PRODUCTS = [
+            { id: 1, name: "Linen Blazer", category: "clothing", price: 189, icon: "🧥" },
+            { id: 2, name: "Silk Scarf", category: "accessory", price: 45, icon: "🧣" },
+            { id: 3, name: "Leather Loafers", category: "footwear", price: 245, icon: "👞" },
+            { id: 4, name: "Cashmere Sweater", category: "clothing", price: 220, icon: "👕" },
+            { id: 5, name: "Gold Hoops", category: "accessory", price: 68, icon: "💍" },
+            { id: 6, name: "Suede Boots", category: "footwear", price: 310, icon: "👢" },
+            { id: 7, name: "Tailored Trousers", category: "clothing", price: 159, icon: "👖" },
+            { id: 8, name: "Leather Belt", category: "accessory", price: 89, icon: "🔗" },
+            { id: 9, name: "Canvas Sneakers", category: "footwear", price: 120, icon: "👟" },
+            { id: 10, name: "Wool Coat", category: "clothing", price: 375, icon: "🧥" },
+            { id: 11, name: "Pearl Necklace", category: "accessory", price: 145, icon: "📿" },
+            { id: 12, name: "Chelsea Boots", category: "footwear", price: 265, icon: "👢" }
+        ];
 
-    const name = document.getElementById('itemName').value.trim();
-    const category = document.getElementById('itemCategory').value;
-    const price = parseInt(document.getElementById('itemPrice').value);
+        // ============================================================
+        // STATE
+        // ============================================================
+        let products = [];
+        let filter = 'all';
+        let search = '';
+        let isAdmin = false;
+        let isReady = false;
 
-    if (!name || !price) { showToast('⚠️ Fill all fields'); return; }
+        // ============================================================
+        // DOM REFS
+        // ============================================================
+        const grid = document.getElementById('grid');
+        const searchBox = document.getElementById('searchBox');
+        const filterBtns = document.querySelectorAll('.filters button');
+        const toast = document.getElementById('toast');
+        const toastText = document.getElementById('toastText');
+        const ownerBtn = document.getElementById('ownerBtn');
+        const adminPanel = document.getElementById('adminPanel');
+        const loginModal = document.getElementById('loginModal');
+        const loginBtn = document.getElementById('loginBtn');
+        const passwordInput = document.getElementById('passwordInput');
+        const addForm = document.getElementById('addForm');
 
-    try {
-      const snapshot = await database.ref('products').once('value');
-      const data = snapshot.val();
-      let maxId = 0;
-      if (data) {
-        const ids = Object.keys(data).map(Number);
-        maxId = Math.max(...ids);
-      }
-      const newId = maxId + 1;
+        // ============================================================
+        // TOAST
+        // ============================================================
+        let toastTimer;
+        function showToast(msg) {
+            toastText.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+        }
 
-      await database.ref('products/' + newId).set({
-        name, category, price,
-        icon: getIcon(category)
-      });
-      showToast('✅ Added: ' + name);
-      addForm.reset();
-    } catch (e) {
-      showToast('⚠️ Error');
-      log('❌ Add error: ' + e.message);
-    }
-  });
+        // ============================================================
+        // SEED DATABASE
+        // ============================================================
+        async function seedDatabase() {
+            console.log('🌱 Seeding database...');
+            try {
+                for (const p of DEFAULT_PRODUCTS) {
+                    const { id, ...data } = p;
+                    await database.ref('products/' + id).set(data);
+                }
+                console.log('✅ Seeded ' + DEFAULT_PRODUCTS.length + ' products!');
+                showToast('📦 Added ' + DEFAULT_PRODUCTS.length + ' products!');
+            } catch (e) {
+                console.error('❌ Seed error:', e);
+            }
+        }
 
-  function getIcon(cat) {
-    const map = { 'clothing': '👕', 'accessory': '💎', 'footwear': '👟' };
-    return map[cat] || '📦';
-  }
+        // ============================================================
+        // LISTEN TO DATABASE
+        // ============================================================
+        function listenToDatabase() {
+            if (!database) {
+                console.error('❌ No database!');
+                grid.innerHTML = `<div class="error">❌ Database not initialized</div>`;
+                return;
+            }
+            
+            console.log('👂 Listening to Firebase...');
+            const ref = database.ref('products');
+            
+            ref.on('value', async (snapshot) => {
+                console.log('📥 Data received!');
+                const data = snapshot.val();
+                
+                if (!data) {
+                    console.log('📭 Database empty, seeding...');
+                    await seedDatabase();
+                    const newSnapshot = await ref.once('value');
+                    const newData = newSnapshot.val();
+                    if (newData) {
+                        products = Object.keys(newData).map(key => ({ id: parseInt(key), ...newData[key] }));
+                        products.sort((a, b) => a.id - b.id);
+                    }
+                } else {
+                    products = Object.keys(data).map(key => ({ id: parseInt(key), ...data[key] }));
+                    products.sort((a, b) => a.id - b.id);
+                }
+                
+                isReady = true;
+                console.log('✅ Loaded ' + products.length + ' products');
+                render();
+            }, (error) => {
+                console.error('❌ Firebase error:', error);
+                grid.innerHTML = `<div class="error">❌ Firebase Error: ${error.message}</div>`;
+            });
+        }
 
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', function() {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      filter = this.dataset.filter;
-      render();
-    });
-  });
+        // ============================================================
+        // RENDER
+        // ============================================================
+        function render() {
+            if (!isReady) return;
+            
+            const filtered = products.filter(p => {
+                if (filter !== 'all' && p.category !== filter) return false;
+                if (search.trim()) return p.name.toLowerCase().includes(search.toLowerCase());
+                return true;
+            });
 
-  let debounce;
-  searchBox.addEventListener('input', function() {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => {
-      search = this.value;
-      render();
-    }, 200);
-  });
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="loading">📭<p>No items found</p></div>';
+                return;
+            }
 
-  // ============================================================
-  // START
-  // ============================================================
-  if (database) {
-    listenToDatabase();
-    log('🔥 Ready!');
-    log('🔑 Password: ' + PASSWORD);
-  }
-</script>
+            let html = '';
+            filtered.forEach(p => {
+                html += `
+                    <div class="card">
+                        <button class="delete-btn ${isAdmin ? 'show' : ''}" onclick="deleteProduct(${p.id})">✕</button>
+                        <div class="img">${p.icon || '📦'}</div>
+                        <h3>${p.name}</h3>
+                        <span class="tag">${p.category}</span>
+                        <div class="price">$${p.price}</div>
+                        <div class="actions">
+                            <button onclick="orderProduct(${p.id})">🛒 order</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        // ============================================================
+        // ACTIONS
+        // ============================================================
+        function orderProduct(id) {
+            const p = products.find(x => x.id === id);
+            if (p) showToast('🛍️ Added: ' + p.name);
+        }
+
+        function deleteProduct(id) {
+            if (!isAdmin) { showToast('⛔ Owner only'); return; }
+            if (!confirm('Delete this item?')) return;
+            database.ref('products/' + id).remove()
+                .then(() => showToast('🗑️ Deleted'))
+                .catch(() => showToast('⚠️ Error deleting'));
+        }
+
+        // ============================================================
+        // ADMIN LOGIN
+        // ============================================================
+        const PASSWORD = 'shopper123';
+
+        function login(password) {
+            if (password === PASSWORD) {
+                isAdmin = true;
+                loginModal.classList.remove('show');
+                adminPanel.classList.add('show');
+                ownerBtn.textContent = '👑 owner ✓';
+                ownerBtn.classList.add('active');
+                showToast('🔓 Owner mode activated');
+                passwordInput.value = '';
+                render();
+            } else {
+                showToast('⛔ Wrong password');
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        function logout() {
+            isAdmin = false;
+            adminPanel.classList.remove('show');
+            ownerBtn.textContent = '👤 owner';
+            ownerBtn.classList.remove('active');
+            showToast('🔒 Logged out');
+            render();
+        }
+
+        // ============================================================
+        // EVENTS
+        // ============================================================
+        ownerBtn.addEventListener('click', () => {
+            if (isAdmin) logout();
+            else loginModal.classList.add('show');
+        });
+
+        loginBtn.addEventListener('click', () => login(passwordInput.value));
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') login(passwordInput.value);
+        });
+        loginModal.addEventListener('click', (e) => {
+            if (e.target === loginModal) {
+                loginModal.classList.remove('show');
+                passwordInput.value = '';
+            }
+        });
+
+        addForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAdmin) { showToast('⛔ Owner only'); return; }
+
+            const name = document.getElementById('itemName').value.trim();
+            const category = document.getElementById('itemCategory').value;
+            const price = parseInt(document.getElementById('itemPrice').value);
+
+            if (!name || !price) { showToast('⚠️ Fill all fields'); return; }
+
+            try {
+                const snapshot = await database.ref('products').once('value');
+                const data = snapshot.val();
+                let maxId = 0;
+                if (data) {
+                    const ids = Object.keys(data).map(Number);
+                    maxId = Math.max(...ids);
+                }
+                const newId = maxId + 1;
+
+                await database.ref('products/' + newId).set({
+                    name, category, price,
+                    icon: getIcon(category)
+                });
+                showToast('✅ Added: ' + name);
+                addForm.reset();
+            } catch (e) {
+                showToast('⚠️ Error adding');
+                console.error('Add error:', e);
+            }
+        });
+
+        function getIcon(cat) {
+            const map = { 'clothing': '👕', 'accessory': '💎', 'footwear': '👟' };
+            return map[cat] || '📦';
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                filter = this.dataset.filter;
+                render();
+            });
+        });
+
+        let debounce;
+        searchBox.addEventListener('input', function() {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                search = this.value;
+                render();
+            }, 200);
+        });
+
+        // ============================================================
+        // START
+        // ============================================================
+        console.log('🔥 Starting Personal Shopper...');
+        console.log('🔑 Password:', PASSWORD);
+        
+        if (database) {
+            listenToDatabase();
+        } else {
+            grid.innerHTML = `<div class="error">❌ Firebase failed to initialize. Check console for errors.</div>`;
+        }
+    </script>
 
 </body>
 </html>
